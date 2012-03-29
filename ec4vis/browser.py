@@ -20,11 +20,14 @@ class ControlPanel(wx.Panel):
         self.responder = responder
         self.SetSize((300, 600))
         # set up sizer
-        root_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        root_sizer = wx.BoxSizer(wx.VERTICAL)
         root_sizer.SetMinSize((300, -1))
-        root_sizer.Add(wx.StaticText(self, -1, label='Data Inspector'), 0, wx.ALL, 10)
+        # root_sizer.Add(wx.StaticText(self, -1, label='Data Inspector'), 0, wx.ALL, 10)
         self.SetSizer(root_sizer)
-        # 
+        # file list
+        data_list = wx.ListBox(self, -1, size=(-1, 400))
+        self.data_list = data_list
+        root_sizer.Add(data_list, 1, wx.ALL|wx.EXPAND, 5)
         self.Layout()
         
 
@@ -41,12 +44,14 @@ class BrowserFrame(wx.Frame):
         # set up sizer
         root_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.SetSizer(root_sizer)
+        # render window
         render_window = wxVTKRenderWindowInteractor(self, -1)
         self.render_window = render_window
         self.setup_renderer()
         root_sizer.Add(render_window, 1, wx.ALL|wx.EXPAND, 0)
         # control panel
         control_panel = ControlPanel(responder, self, -1)
+        self.control_panel = control_panel
         root_sizer.Add(control_panel, 0, wx.ALL, 0)
         self.Layout()
 
@@ -88,5 +93,6 @@ class BrowserFrame(wx.Frame):
         self.Bind(wx.EVT_MENU, self.responder.DummyHandler, id=_mi.GetId())
         menu_bar.Append(_menu, '&Animate')
         del _mi, _menu
-        
         self.SetMenuBar(menu_bar)
+
+        

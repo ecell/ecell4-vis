@@ -6,11 +6,22 @@ from logging import debug
 import wx
 
 from browser import BrowserFrame
+from ecell4.utils import find_hdf5
 from ecell4.world import World
+from ecell4.particle import ParticleSpace
+from ecell4.lattice import LatticeSpace
 
+# this is a hack
+class ParticleWorld(World):
+    SPACE_REGISTRY = (('ParticleSpace', ParticleSpace),)
+class LatticeWorld(World): 
+    SPACE_REGISTRY = (('LatticeSpace', LatticeSpace),)
 
 VERSION = (0, 0, 1)
 APP_TITLE_NAME = 'E-Cell 4 Visualization Browser Version (%d.%d.%d)' %VERSION
+
+SUPPORTED_WORLDS = dict(
+    world=World, particleworld=ParticleWorld, latticeworld=LatticeWorld)
 
 
 class BrowserApp(wx.App):
@@ -36,31 +47,24 @@ class BrowserApp(wx.App):
         """Handler for 'File'->'Open World File' menu.
         """
         dlg = wx.FileDialog(
-            self.browser, message='Select world datafile',
-            style=wx.OPEN)
-        path = None
+            self.browser, message='Select world datafiles',
+            style=wx.OPEN|wx.MULTIPLE)
+        paths = []
         if dlg.ShowModal()==wx.ID_OK:
-            path = dlg.GetPath()
+            paths = dlg.GetPaths()
         dlg.Destroy()
-        if path:
-            pass
-            # if valid worldtype, load it
-            # try:
-            #     world = load_world(path)
-            # except:
-            #     pass # error
-            # look for available visualizer
-            # available_visualizers = find_visializers(world)
-            # visualizer_class = None
-            # if len(available_visualizers)==1: # found exact
-            #     visualizer_class_name = available_visualizers[0]
-            # elif len(available_visualizers)>1:
-            #     # show selection dialog
-            #     visualizer_class_name = dlg.GetValue()
-            # VizualizerClass = load_visualizer_class(visualizer_class_name)
-            # self.visualizer = VisualizerClass(self.renderer, world)
-            # add to browser
-        #self.browser.Fit()
+        for path in paths:
+            try:
+                h5data = find_hdf5(path, new=False)
+                format_ = h5data.attrs.get('format', '(nonexistent)')
+                WorldClass = SUPPORTED_WORLDS[format_]
+                world = WorldClass.Load(path)
+                name = world.name
+                self.browser.control_panel.data_list.Append(name, world)
+            except Exception, e:
+                wx.MessageBox(
+                    'Failed to load %s: %s' %(path, str(e)),
+                    'Oops!', wx.OK)
 
     def OnQuitMenu(self, evt):
         """Handler for 'File'->'Quit' menu.
