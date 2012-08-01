@@ -6,8 +6,9 @@ from logging import debug
 import wx
 from ec4vis import *
 
-from render_window import RenderWindowPanel
-from control_panel import ControlPanel
+from renderer_panel import RendererPanel
+from workspace_panel import WorkspacePanel
+from inspector_panel import InspectorPanel
 from menu_bar import AppMenuBar
         
 
@@ -18,20 +19,24 @@ class BrowserFrame(wx.Frame):
         """Initializer.
         """
         wx.Frame.__init__(self, *args, **kwargs)
-        # render window
-        render_window_panel = RenderWindowPanel(self, -1)
-        # control panel
-        control_panel = ControlPanel(self, -1)
+        # workspace panel
+        workspace_panel = WorkspacePanel(self, -1)
+        # renderer panel
+        renderer_panel = RendererPanel(self, -1)
+        # inspector panel
+        # inspector_panel = InspectorPanel(self, -1)
         # menu
         menu_bar = AppMenuBar(self)
         # bindings
-        self.render_window_panel = render_window_panel
-        self.control_panel = control_panel
+        self.workspace_panel = workspace_panel
+        self.renderer_panel = renderer_panel
+        # self.inspector_panel = inspector_panel
         self.menu_bar = menu_bar
         # sizer
         root_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        root_sizer.Add(render_window_panel, 1, wx.ALL|wx.EXPAND, 0)
-        root_sizer.Add(control_panel, 0, wx.ALL|wx.EXPAND, 0)
+        root_sizer.Add(workspace_panel, 0, wx.ALL|wx.EXPAND, 0)
+        root_sizer.Add(renderer_panel, 1, wx.ALL|wx.EXPAND, 0)
+        # root_sizer.Add(inspector_panel, 0, wx.ALL|wx.EXPAND, 0)
         self.SetSizer(root_sizer)
         self.Layout()
 

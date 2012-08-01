@@ -2,17 +2,17 @@
 """app.py -- Visualizer Application implementation by Yasushi Masuda (ymasuda@accense.com)
 """
 from logging import debug
+from os import getcwd
 
-import wx, wx.dataview
+import wx
 
 from ec4vis.browser import BrowserFrame
 from ec4vis.plugins import PluginLoader
 from ec4vis.settings import settings
 from ec4vis.visualizer import VISUALIZER_CLASSES, VisualizerEventResponder
-from ec4vis.visualizer_panel import SourceDataViewModel, DataDataViewModel
 
 VERSION = (0, 0, 1)
-APP_TITLE_NAME = 'E-Cell 4 Visualization Browser Version (%d.%d.%d)' %VERSION
+APP_TITLE_NAME = 'E-Cell 4 Data Browser Version %d.%d.%d' %VERSION
 
 
 class BrowserApp(wx.App, VisualizerEventResponder):
@@ -28,81 +28,79 @@ class BrowserApp(wx.App, VisualizerEventResponder):
     def OnInit(self):
         """Integrated initialization hook.
         """
-        # UI stuff
-        self.init_ui()
-        # plugins
+        # initialize plugins
         self.init_plugins()
+        # initialize UI stuff
+        self.init_ui()
         self.render_window.Render()
         return True
+
+    def init_plugins(self):
+        """Initialize plugins
+        """
+        # load plugins
+        plugin_loader = PluginLoader()
+        for i, (modpath, status) in enumerate(plugin_loader.load_iterative()):
+            message = '%s ... %s' %(modpath, 'OK' if status else 'FAILED')
+            # pass
 
     def init_ui(self):
         """Initialize UI.
         """
         # browser
         browser = BrowserFrame(None, -1, APP_TITLE_NAME, size=(1000, 600))
+        workspace_panel = browser.workspace_panel
+        renderer_panel = browser.renderer_panel
+        render_window = renderer_panel.render_window
+        # inspector_panel = browser.inspector_panel # TBD
 
         # outlet bindings
         self.browser = browser
-        render_window_panel = self.browser.render_window_panel
+        self.workspace_panel = workspace_panel
+        self.renderer_panel = renderer_panel
         if self.settings:
             render_window_panel.configure_renderer(self.settings)
-        self.render_window = render_window_panel.render_window
-        self.renderer = render_window_panel.renderer
-        control_panel = self.browser.control_panel
-        visualizer_panel = control_panel.visualizer_panel
-        self.visualizer_choice = visualizer_panel.visualizer_choice
-        self.visualizer_reset_button = visualizer_panel.reset_button
-        self.visualizer_configure_button = visualizer_panel.configure_button
-        self.source_list = visualizer_panel.source_list
-        self.source_add_button = visualizer_panel.add_button
-        self.source_remove_button = visualizer_panel.remove_button
-        self.data_list = visualizer_panel.data_list
-        self.data_up_button = visualizer_panel.up_button
-        self.data_down_button = visualizer_panel.down_button
-        # dynamically generated dialog
-        self.data_loader_dialog = None
+        self.render_window = render_window
+        self.renderer = renderer_panel.renderer
 
-        # outlet configurations
-        self.sources = []
-        source_model = SourceDataViewModel(self.sources)
-        # data_model = DataDataViewModel([])
-        self.update_visualizer_buttons_status()
-        self.source_list.AssociateModel(source_model)
-        self.update_source_remove_ui_status()
-        # self.data_list.AssociateModel(data_model)
-        self.update_data_list_buttons_status()
+        # self.inspector_panel = inspector_panel
+        
+        # # outlet configurations
+        # self.sources = []
+        # source_model = SourceDataViewModel(self.sources)
+        # # data_model = DataDataViewModel([])
+        # self.update_visualizer_buttons_status()
+        # # self.source_list.AssociateModel(source_model)
+        # self.update_source_remove_ui_status()
+        # # self.data_list.AssociateModel(data_model)
+        # self.update_data_list_buttons_status()
 
-        # event bindings
+        # menu event bindings
         menu_bar = browser.menu_bar
-        file_add = menu_bar.file_add
-        file_quit = menu_bar.file_quit
-        # menu commands
-        browser.Bind(wx.EVT_MENU, self.OnFileAddMenu, file_add)
-        browser.Bind(wx.EVT_MENU, self.OnFileQuitMenu, file_quit)
-        # ui commands
-        self.visualizer_reset_button.Bind(
-            wx.EVT_BUTTON, self.OnVisualizerResetButton)
-        self.visualizer_configure_button.Bind(
-            wx.EVT_BUTTON, self.OnVisualizerConfigureButton)
-        self.source_add_button.Bind(
-            wx.EVT_BUTTON, self.OnSourceAddButton)
-        self.source_remove_button.Bind(
-            wx.EVT_BUTTON, self.OnSourceRemoveButton)
-        self.visualizer_choice.Bind(
-            wx.EVT_CHOICE, self.OnVisualizerChoice)
-        self.source_list.Bind(
-            wx.dataview.EVT_DATAVIEW_SELECTION_CHANGED,
-            self.OnSourceListSelectionChanged)
-        self.data_list.Bind(
-            wx.dataview.EVT_DATAVIEW_SELECTION_CHANGED,
-            self.OnDataListSelectionChanged)
-        self.data_up_button.Bind(
-            wx.EVT_BUTTON, self.OnDataUpButton)
-        self.data_down_button.Bind(
-            wx.EVT_BUTTON, self.OnDataDownButton)
+        app_about = menu_bar.app_about
+        app_quit = menu_bar.app_quit
+        workspace_save = menu_bar.workspace_save
+        workspace_save_as = menu_bar.workspace_save_as
+        workspace_load = menu_bar.workspace_load
+        workspace_remove = menu_bar.workspace_remove
+        workspace_add_file = menu_bar.workspace_add_file
+        workspace_add_loader = menu_bar.workspace_add_loader
+        workspace_add_visualizer = menu_bar.workspace_add_visualizer
+        workspace_add_filter = menu_bar.workspace_add_filter
 
-        # renderer event binding --- this is bad hack
-        def render_window_render_observer(o, e, f=render_window_panel):
+        # menu commands
+        def menu_bind(handler, menu):
+            browser.Bind(wx.EVT_MENU, handler, menu)
+        menu_bind(self.OnAppAboutMenu, app_about)
+        menu_bind(self.OnAppQuitMenu, app_quit)
+        menu_bind(self.OnWorkspaceLoadMenu, workspace_load)
+        menu_bind(self.OnWorkspaceSaveMenu, workspace_save)
+        menu_bind(self.OnWorkspaceSaveAsMenu, workspace_save_as)
+        menu_bind(self.OnWorkspaceAddFileMenu, workspace_add_file)
+        menu_bind(self.OnWorkspaceAddFileMenu, workspace_add_file)
+
+        # renderer event binding --- this is a bad hack
+        def render_window_render_observer(o, e, f=renderer_panel):
             # hasattr() is to prevent AttributeError.
             """ # This is kept for demonstration use.
             if hasattr(self, 'visualizer'):
@@ -116,58 +114,67 @@ class BrowserApp(wx.App, VisualizerEventResponder):
         self.SetTopWindow(browser)
         self.browser.Show(True)
 
-    def init_plugins(self):
-        """Initialize plugins
-        """
-        # load plugins
-        plugin_loader = PluginLoader()
-        dlg = wx.ProgressDialog(
-            u'Loading plugins...',
-            u'',
-            maximum=len(plugin_loader.modules_info),
-            parent=self.browser,
-            style=wx.PD_AUTO_HIDE)
-        for i, (modpath, status) in enumerate(plugin_loader.load_iterative()):
-            message = '%s ... %s' %(modpath, 'OK' if status else 'FAILED')
-            wx.Yield()
-            dlg.Update(i+1, message)
-        dlg.Destroy()
-        wx.Yield()
-        # set plugin choice
-        visualizer_choices = (
-            ['Select Visualizer']+sorted(VISUALIZER_CLASSES.keys()))
-        self.visualizer_choice.SetItems(visualizer_choices)
-
     def finalize(self):
         """Finalizer.
         """
         pass # just a placeholder now.
 
-    def add_file_source(self):
-        dlg = wx.FileDialog(self.browser, u'Choose file to add', style=wx.FD_MULTIPLE)
+    def OnAppAboutMenu(self, event):
+        """Called on 'App'->'About' menu.
+        """
+        dlg = wx.MessageDialog(self.browser, APP_TITLE_NAME,
+                               'About this application...', wx.OK)
+        dlg.ShowModal()
+        dlg.Destroy()
+
+    def OnAppQuitMenu(self, event):
+        """Called on 'App'->'Quit' menu.
+        """
+        self.finalize()
+        self.ExitMainLoop()
+
+    def OnWorkspaceLoadMenu(self, evt):
+        """Called on 'Workspace'->'Load workspace' menu.
+        """
+        # TBD: save current workspace to file.
+        dlg = wx.FileDialog(
+            self.browser,
+            u'Choose workspace file to load',
+            style=wx.OPEN, defaultDir=getcwd())
         ret = dlg.ShowModal()
         if ret==wx.ID_OK:
-            filenames = dlg.GetPaths()
-            present_uris = [uri for use, uri in self.sources]
-            updated = False
-            for fn in filenames:
-                uri = 'file://%s' %(fn)
-                if uri not in present_uris:
-                    self.sources.append([True, uri])
-                    updated = True
-            if updated:
-                # this is required for yielding
-                self.source_list.GetModel().AfterReset()
-
-    def OnFileAddMenu(self, event):
-        """Called on 'File'->'Add source...' menu.
+            filename = dlg.GetPath()
+        # TBD: saving mechanism
+            
+    def OnWorkspaceSaveMenu(self, evt):
+        """Called on 'Workspace'->'Save workspace' menu.
         """
-        self.add_file_source()
-
-    def OnFileQuitMenu(self, event):
-        """Called on 'File'->'Quit' menu.
+        # TBD: save current workspace to file.
+            
+    def OnWorkspaceSaveAsMenu(self, evt):
+        """Called on 'Workspace'->'Save workspace as...' menu.
         """
-        self.ExitMainLoop()
+        # TBD: save current workspace to file.
+        dlg = wx.FileDialog(
+            self.browser,
+            u'Choose workspace file to save',
+            style=wx.SAVE, defaultDir=getcwd())
+        ret = dlg.ShowModal()
+        if ret==wx.ID_OK:
+            filename = dlg.GetPath()
+        # TBD: saving mechanism
+            
+    def OnWorkspaceAddFileMenu(self, evt):
+        """Called on 'Workspace'->'Add file...' menu.
+        """
+        dlg = wx.DirDialog(
+            self.browser,
+            u'Choose data directory',
+            style=wx.DD_DEFAULT_STYLE|wx.DD_DIR_MUST_EXIST|wx.DD_CHANGE_DIR)
+        ret = dlg.ShowModal()
+        if ret==wx.ID_OK:
+            dirname = dlg.GetPath()
+            
 
     def update_visualizer_buttons_status(self):
         """Updates enable/disable status of Reset/Configure buttons.
@@ -181,8 +188,9 @@ class BrowserApp(wx.App, VisualizerEventResponder):
     def update_source_remove_ui_status(self):
         """Updates enable/disable status of UIs related removing source.
         """
-        selected = self.source_list.GetSelection()
-        self.source_remove_button.Enable(bool(selected))
+        if False:
+            selected = self.source_list.GetSelection()
+            self.source_remove_button.Enable(bool(selected))
 
     def update_data_list_buttons_status(self):
         """Updates enable/disable status of UIs related removing source.

@@ -4,6 +4,32 @@
 import wx
 
 
+MENU_STRUCTURE = (
+    # section_name, section_info
+    ('App', (
+        # attr_bit, label, accel_key, tip
+        ('about', 'About', '', 'About this application.'),
+        ('quit', 'Quit', 'Ctrl-Q', 'Quit application'),
+        )),
+    ('Workspace', (
+        ('save', 'Save Workspace', 'Ctrl-S', 'Save current workspace state.'),
+        ('save_as', 'Save Workspace As...', 'Ctrl-Shift-S', 'Save current workspace state with given filename.'),
+        ('load', 'Load Workspace...', 'Ctrl-O', 'Load current workspace state.'),
+        ('remove', 'Remove Selected Item', '', 'Remove item in selection.'),
+        ('add_file', 'Add Data Files...', '', 'Add data file(s).'),
+        ('add_loader', 'Add Loader...', '', 'Add a loader.'),
+        ('add_visualizer', 'Add Visualizer...', '', 'Add a visualizer.'),
+        ('add_filter', 'Add Filter...', '', 'Add a filter.'),
+        )),
+    ('Visual', (
+        ('toggle', 'Toggle Visibility', '', 'Toggle visivility.'),
+        )),
+    ('Parameter', (
+        ('import', 'Import Parameters...', '', 'Import parameters.'),
+        )),
+    )
+
+
 class AppMenuBar(wx.MenuBar):
     """Application menubar.
     """
@@ -11,16 +37,21 @@ class AppMenuBar(wx.MenuBar):
         """Initializer.
         """
         wx.MenuBar.__init__(self, *args, **kwargs)
-        # file menu
-        file_menu = wx.Menu()
-        file_add = file_menu.Append(-1, '&Add source...\tCtrl-O', "Add a file source")
-        file_quit = file_menu.Append(-1, '&Quit\tCtrl-Q', "Quit application")
-        # populating menus
-        self.Append(file_menu, '&File')
-        # name bindings
-        self.file_menu = file_menu
-        self.file_add = file_add
-        self.file_quit = file_quit
+
+        # Build menu from MENU_STRUCTURE
+        for section_name, section_info in MENU_STRUCTURE:
+            # create section
+            menu = wx.Menu()
+            self.Append(menu, '&'+section_name)
+            # bind as self.<section_name>_menu
+            setattr(self, section_name.lower()+'_menu', menu)
+            for attr_bit, label, accel_key, tip in section_info:
+                # create menuitem for the section
+                if accel_key:
+                    label += ('\t'+accel_key)
+                menu_item = menu.Append(-1, label, tip)
+                # bind as self.<section_name>_<attr_bit>
+                setattr(self, section_name.lower()+'_'+attr_bit, menu_item)
         # associate menubar to parent.
         parent.SetMenuBar(self)
 
@@ -32,12 +63,17 @@ if __name__=='__main__':
         def OnInit(self):
             """Initializer.
             """
-            frame = wx.Frame(None, -1, u'Visual Panel Demo')
+            frame = wx.Frame(None, -1, u'Menu Demo')
             menubar = AppMenuBar(frame)
             frame.SetMenuBar(menubar)
             frame.Layout()
+            frame.Bind(wx.EVT_MENU, self.OnQuitMenu, menubar.app_quit)
             frame.Show(True)
             self.SetTopWindow(frame)
             return True
+
+        def OnQuitMenu(self, evt):
+            self.ExitMainLoop()
+        
     app = App(0)
     app.MainLoop()
