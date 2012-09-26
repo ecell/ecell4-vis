@@ -145,9 +145,9 @@ class VisualizerPanel(wx.Panel):
         # controls
         reset_button = wx.Button(self, -1, u'Reset/Update')
         configure_button = wx.Button(self, -1, u'Configure')
-        source_list = SourceDataViewListCtrl(self, -1, style=wx.BORDER_SUNKEN)
-        add_button = wx.Button(self, -1, u'Add')
-        remove_button = wx.Button(self, -1, u'Delete')
+        # source_list = SourceDataViewListCtrl(self, -1, style=wx.BORDER_SUNKEN)
+        # add_button = wx.Button(self, -1, u'Add')
+        # remove_button = wx.Button(self, -1, u'Delete')
         data_list = DataDataViewListCtrl(self, -1, style=wx.BORDER_SUNKEN)
         up_button = wx.Button(self, -1, u'Up')
         down_button = wx.Button(self, -1, u'Down')
@@ -165,8 +165,8 @@ class VisualizerPanel(wx.Panel):
         button_sizer1.Add(reset_button, 1, wx.EXPAND|wx.ALL, 0)
         button_sizer1.Add(configure_button, 1, wx.EXPAND|wx.ALL, 0)
         button_sizer2 = wx.BoxSizer(wx.HORIZONTAL)
-        button_sizer2.Add(add_button, 1, wx.EXPAND|wx.ALL, 0)
-        button_sizer2.Add(remove_button, 1, wx.EXPAND|wx.ALL, 0)
+        # button_sizer2.Add(add_button, 1, wx.EXPAND|wx.ALL, 0)
+        # button_sizer2.Add(remove_button, 1, wx.EXPAND|wx.ALL, 0)
         button_sizer3 = wx.BoxSizer(wx.HORIZONTAL)
         button_sizer3.Add(up_button, 1, wx.EXPAND|wx.ALL, 0)
         button_sizer3.Add(down_button, 1, wx.EXPAND|wx.ALL, 0)
@@ -184,11 +184,11 @@ class VisualizerPanel(wx.Panel):
         player_sizer.Add(frame_pos_slider, 0, wx.ALL|wx.EXPAND, 0)
         player_sizer.Add(button_sizer4, 0, wx.ALL|wx.EXPAND, 0)
         """
-        root_sizer.Add(wx.StaticText(self, -1, u'Vizualizer'), 0, wx.ALL, 5)
+        root_sizer.Add(wx.StaticText(self, -1, u'Visualizer'), 0, wx.ALL, 5)
         root_sizer.Add(visualizer_choice, 0, wx.ALL, 5)
         root_sizer.Add(button_sizer1, 0, wx.ALL, 5)
         root_sizer.Add(wx.StaticText(self, -1, u'Sources'), 0, wx.ALL, 5)
-        root_sizer.Add(source_list, 1, wx.ALL|wx.EXPAND, 5)
+        # root_sizer.Add(source_list, 1, wx.ALL|wx.EXPAND, 5)
         root_sizer.Add(button_sizer2, 0, wx.ALL, 5)
         root_sizer.Add(wx.StaticText(self, -1, u'Data'), 0, wx.ALL, 5)
         root_sizer.Add(data_list, 1, wx.ALL|wx.EXPAND, 5)
@@ -201,10 +201,10 @@ class VisualizerPanel(wx.Panel):
         self.reset_button = reset_button
         self.configure_button = configure_button
         self.visualizer_choice = visualizer_choice
-        self.source_list = source_list
+        # self.source_list = source_list
         self.data_list = data_list
-        self.add_button = add_button
-        self.remove_button = remove_button
+        # self.add_button = add_button
+        # self.remove_button = remove_button
         self.up_button = up_button
         self.down_button = down_button
         """
@@ -242,7 +242,7 @@ if __name__=='__main__':
             visualizer_panel.set_visualizer_choices(VISUALIZERS)
             source_model = SourceDataViewModel(sources)
             data_model = DataDataViewModel(data)
-            visualizer_panel.source_list.AssociateModel(source_model)
+            # visualizer_panel.source_list.AssociateModel(source_model)
             visualizer_panel.data_list.AssociateModel(data_model)
             sizer = wx.BoxSizer(wx.VERTICAL)
             sizer.Add(visualizer_panel, 1, wx.ALL|wx.EXPAND, 5)

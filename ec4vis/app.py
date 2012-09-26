@@ -57,6 +57,7 @@ class BrowserApp(wx.App, VisualizerEventResponder):
         # outlet bindings
         self.browser = browser
         self.workspace_panel = workspace_panel
+        self.workspace_tree = workspace_panel.tree_ctrl
         self.renderer_panel = renderer_panel
         if self.settings:
             render_window_panel.configure_renderer(self.settings)
@@ -79,25 +80,27 @@ class BrowserApp(wx.App, VisualizerEventResponder):
         menu_bar = browser.menu_bar
         app_about = menu_bar.app_about
         app_quit = menu_bar.app_quit
-        workspace_save = menu_bar.workspace_save
-        workspace_save_as = menu_bar.workspace_save_as
-        workspace_load = menu_bar.workspace_load
-        workspace_remove = menu_bar.workspace_remove
-        workspace_add_file = menu_bar.workspace_add_file
-        workspace_add_loader = menu_bar.workspace_add_loader
-        workspace_add_visualizer = menu_bar.workspace_add_visualizer
-        workspace_add_filter = menu_bar.workspace_add_filter
+        workspace_set_root = menu_bar.workspace_set_root
+        #workspace_save = menu_bar.workspace_save
+        #workspace_save_as = menu_bar.workspace_save_as
+        #workspace_load = menu_bar.workspace_load
+        #workspace_remove = menu_bar.workspace_remove
+        #workspace_add_file = menu_bar.workspace_add_file
+        #workspace_add_loader = menu_bar.workspace_add_loader
+        #workspace_add_visualizer = menu_bar.workspace_add_visualizer
+        #workspace_add_filter = menu_bar.workspace_add_filter
 
         # menu commands
         def menu_bind(handler, menu):
             browser.Bind(wx.EVT_MENU, handler, menu)
         menu_bind(self.OnAppAboutMenu, app_about)
         menu_bind(self.OnAppQuitMenu, app_quit)
-        menu_bind(self.OnWorkspaceLoadMenu, workspace_load)
-        menu_bind(self.OnWorkspaceSaveMenu, workspace_save)
-        menu_bind(self.OnWorkspaceSaveAsMenu, workspace_save_as)
-        menu_bind(self.OnWorkspaceAddFileMenu, workspace_add_file)
-        menu_bind(self.OnWorkspaceAddFileMenu, workspace_add_file)
+        menu_bind(self.OnWorkspaceSetRootMenu, workspace_set_root)
+        #menu_bind(self.OnWorkspaceLoadMenu, workspace_load)
+        #menu_bind(self.OnWorkspaceSaveMenu, workspace_save)
+        #menu_bind(self.OnWorkspaceSaveAsMenu, workspace_save_as)
+        #menu_bind(self.OnWorkspaceAddFileMenu, workspace_add_file)
+        #menu_bind(self.OnWorkspaceAddFileMenu, workspace_add_file)
 
         # renderer event binding --- this is a bad hack
         def render_window_render_observer(o, e, f=renderer_panel):
@@ -133,47 +136,62 @@ class BrowserApp(wx.App, VisualizerEventResponder):
         self.finalize()
         self.ExitMainLoop()
 
-    def OnWorkspaceLoadMenu(self, evt):
-        """Called on 'Workspace'->'Load workspace' menu.
+    def OnWorkspaceSetRootMenu(self, evt):
+        """Called on 'Workspace'->'Set Root Direcotry...' menu.
         """
         # TBD: save current workspace to file.
-        dlg = wx.FileDialog(
-            self.browser,
-            u'Choose workspace file to load',
-            style=wx.OPEN, defaultDir=getcwd())
-        ret = dlg.ShowModal()
-        if ret==wx.ID_OK:
-            filename = dlg.GetPath()
-        # TBD: saving mechanism
-            
-    def OnWorkspaceSaveMenu(self, evt):
-        """Called on 'Workspace'->'Save workspace' menu.
-        """
-        # TBD: save current workspace to file.
-            
-    def OnWorkspaceSaveAsMenu(self, evt):
-        """Called on 'Workspace'->'Save workspace as...' menu.
-        """
-        # TBD: save current workspace to file.
-        dlg = wx.FileDialog(
-            self.browser,
-            u'Choose workspace file to save',
-            style=wx.SAVE, defaultDir=getcwd())
-        ret = dlg.ShowModal()
-        if ret==wx.ID_OK:
-            filename = dlg.GetPath()
-        # TBD: saving mechanism
-            
-    def OnWorkspaceAddFileMenu(self, evt):
-        """Called on 'Workspace'->'Add file...' menu.
-        """
         dlg = wx.DirDialog(
             self.browser,
-            u'Choose data directory',
+            u'Choose root directory for workspace',
             style=wx.DD_DEFAULT_STYLE|wx.DD_DIR_MUST_EXIST|wx.DD_CHANGE_DIR)
         ret = dlg.ShowModal()
         if ret==wx.ID_OK:
             dirname = dlg.GetPath()
+            # TBD: set directory
+            self.workspace_tree.set_root_directory(dirname)
+            
+
+#     def OnWorkspaceLoadMenu(self, evt):
+#         """Called on 'Workspace'->'Load workspace' menu.
+#         """
+#         # TBD: save current workspace to file.
+#         dlg = wx.FileDialog(
+#             self.browser,
+#             u'Choose workspace file to load',
+#             style=wx.OPEN, defaultDir=getcwd())
+#         ret = dlg.ShowModal()
+#         if ret==wx.ID_OK:
+#             filename = dlg.GetPath()
+#         # TBD: saving mechanism
+            
+#     def OnWorkspaceSaveMenu(self, evt):
+#         """Called on 'Workspace'->'Save workspace' menu.
+#         """
+#         # TBD: save current workspace to file.
+            
+#     def OnWorkspaceSaveAsMenu(self, evt):
+#         """Called on 'Workspace'->'Save workspace as...' menu.
+#         """
+#         # TBD: save current workspace to file.
+#         dlg = wx.FileDialog(
+#             self.browser,
+#             u'Choose workspace file to save',
+#             style=wx.SAVE, defaultDir=getcwd())
+#         ret = dlg.ShowModal()
+#         if ret==wx.ID_OK:
+#             filename = dlg.GetPath()
+#         # TBD: saving mechanism
+            
+#     def OnWorkspaceAddFileMenu(self, evt):
+#         """Called on 'Workspace'->'Add file...' menu.
+#         """
+#         dlg = wx.DirDialog(
+#             self.browser,
+#             u'Choose data directory',
+#             style=wx.DD_DEFAULT_STYLE|wx.DD_DIR_MUST_EXIST|wx.DD_CHANGE_DIR)
+#         ret = dlg.ShowModal()
+#         if ret==wx.ID_OK:
+#             dirname = dlg.GetPath()
             
 
     def update_visualizer_buttons_status(self):
