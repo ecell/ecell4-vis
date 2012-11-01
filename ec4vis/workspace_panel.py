@@ -1,9 +1,13 @@
 # coding: utf-8
 """workspace_panel.py --- Workspace panel in visualizer application.
 """
-import os
+import glob, os, os.path
 import wx
 from wx.lib import filebrowsebutton
+
+icons_path = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), 'resources', 'icons')
+
 
 
 class Ec4DirectoryScanner(object):
@@ -56,10 +60,21 @@ class WorkspaceTree(wx.TreeCtrl):
         wx.TreeCtrl.__init__(self, *args, **kwargs)
         image_size = (16, 16)
         self.image_list = wx.ImageList(*image_size)
+        """
         self.folder_image_id = self.image_list.Add(
             wx.ArtProvider_GetBitmap(wx.ART_FOLDER, wx.ART_OTHER, image_size))
         self.file_image_id = self.image_list.Add(
             wx.ArtProvider_GetBitmap(wx.ART_NORMAL_FILE, wx.ART_OTHER, image_size))
+            """
+        self.folder_image_id = self.image_list.Add(
+            wx.Image(os.path.join(icons_path, 'folder_open.png'),
+                     wx.BITMAP_TYPE_PNG).ConvertToBitmap())
+        self.file_image_id = self.image_list.Add(
+            wx.Image(os.path.join(icons_path, 'document_default.png'),
+                     wx.BITMAP_TYPE_PNG).ConvertToBitmap())
+        self.bundle_image_id = self.image_list.Add(
+            wx.Image(os.path.join(icons_path, 'draw_layer.png'),
+                     wx.BITMAP_TYPE_PNG).ConvertToBitmap())
         self.SetImageList(self.image_list)
         self._root_path = os.getcwd()
 
@@ -126,7 +141,11 @@ class WorkspaceTree(wx.TreeCtrl):
                 node_names.remove(child_text)
                 child_path = os.path.join(node_path, child_text)
                 if os.path.isdir(child_path):
-                    self.SetItemImage(child_id, self.folder_image_id, wx.TreeItemIcon_Normal)
+                    image_id = self.folder_image_id
+                    if glob.glob(os.path.join(node_path, '*.h5')):
+                        image_id = self.bundle_image_id
+                    self.SetItemImage(
+                        child_id, self.image_id, wx.TreeItemIcon_Normal)
                     self.SetItemHasChildren(child_id, True)
                     if self.IsExpanded(child_id):
                         self.rebuild_tree(child_id)
@@ -145,6 +164,8 @@ class WorkspaceTree(wx.TreeCtrl):
             self.SetItemHasChildren(child_id, is_dir)
             if is_dir:
                 image_id = self.folder_image_id
+                if glob.glob(os.path.join(node_path, '*.h5')):
+                    image_id = self.bundle_image_id
                 self.SetItemImage(child_id, image_id, wx.TreeItemIcon_Normal)
                 self.SetItemImage(child_id, image_id, wx.TreeItemIcon_Expanded)
             else:
