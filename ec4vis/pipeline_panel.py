@@ -4,196 +4,58 @@
 import wx
 from wx.lib.mixins import treemixin
 
-
-class PipelineTreeModel(object):
-    """Pipeline tree model.
-    """
-    def __init__(self, *args, **kwargs):
-        self.items = []
-        self.itemCounter = 0
-        super(PipelineTreeModel, self).__init__(*args, **kwargs)
-
-    def GetItem(self, indices):
-        text, children = 'Hidden root', self.items
-        for index in indices:
-            text, children = children[index]
-        return text, children
-
-    def GetText(self, indices):
-        return self.GetItem(indices)[0]
-
-    def GetChildren(self, indices):
-        return self.GetItem(indices)[1]
-
-    def GetChildrenCount(self, indices):
-        return len(self.GetChildren(indices))
-
-    def SetChildrenCount(self, indices, count):
-        children = self.GetChildren(indices)
-        while len(children) > count:
-            children.pop()
-        while len(children) < count:
-            children.append(('item %d'%self.itemCounter, []))
-            self.itemCounter += 1
-
-    def MoveItem(self, itemToMoveIndex, newParentIndex):
-        itemToMove = self.GetItem(itemToMoveIndex)
-        newParentChildren = self.GetChildren(newParentIndex)
-        newParentChildren.append(itemToMove)
-        oldParentChildren = self.GetChildren(itemToMoveIndex[:-1])
-        oldParentChildren.remove(itemToMove)
+from utils_wx import TreeCtrlPlus
+from pipeline import Pipeline, PipelineItem
 
 
-class PipelineTreeMixin(treemixin.VirtualTree, treemixin.DragAndDrop, 
-                    treemixin.ExpansionState):
-    """Tree Mixin.
-    """
-    def __init__(self, *args, **kwargs):
-        self.model = kwargs.pop('treemodel')
-        self.log = kwargs.pop('log')
-        super(PipelineTreeMixin, self).__init__(*args, **kwargs)
-        self.CreateImageList()
-
-    def CreateImageList(self):
-        size = (16, 16)
-        self.imageList = wx.ImageList(*size)
-        for art in wx.ART_FOLDER, wx.ART_FILE_OPEN, wx.ART_NORMAL_FILE:
-            self.imageList.Add(wx.ArtProvider.GetBitmap(art, wx.ART_OTHER, 
-                                                        size))
-        self.AssignImageList(self.imageList)
-
-    def OnGetItemText(self, indices):
-        return self.model.GetText(indices)
-
-    def OnGetChildrenCount(self, indices):
-        return self.model.GetChildrenCount(indices)
-
-    def OnGetItemFont(self, indices):
-        # Show how to change the item font. Here we use a small font for
-        # items that have children and the default font otherwise.
-        if self.model.GetChildrenCount(indices) > 0:
-            return wx.SMALL_FONT
-        else:
-            return super(DemoTreeMixin, self).OnGetItemFont(indices)
-
-    def OnGetItemTextColour(self, indices):
-        # Show how to change the item text colour. In this case second level
-        # items are coloured red and third level items are blue. All other
-        # items have the default text colour.
-        if len(indices) % 2 == 0:
-            return wx.RED
-        elif len(indices) % 3 == 0:
-            return wx.BLUE
-        else:
-            return super(DemoTreeMixin, self).OnGetItemTextColour(indices)
-
-    def OnGetItemBackgroundColour(self, indices):
-        # Show how to change the item background colour. In this case the
-        # background colour of each third item is green.
-        if indices[-1] == 2:
-            return wx.GREEN
-        else: 
-            return super(DemoTreeMixin, 
-                         self).OnGetItemBackgroundColour(indices)
-
-    def OnGetItemImage(self, indices, which):
-        # Return the right icon depending on whether the item has children.
-        if which in [wx.TreeItemIcon_Normal, wx.TreeItemIcon_Selected]:
-            if self.model.GetChildrenCount(indices):
-                return 0
-            else:
-                return 2
-        else:
-            return 1
-
-    def OnDrop(self, dropTarget, dragItem):
-        dropIndex = self.GetIndexOfItem(dropTarget)
-        dropText = self.model.GetText(dropIndex)
-        dragIndex = self.GetIndexOfItem(dragItem)
-        dragText = self.model.GetText(dragIndex)
-        """self.log.write('drop %s %s on %s %s'%(dragText, dragIndex,
-            dropText, dropIndex))"""
-        self.model.MoveItem(dragIndex, dropIndex)
-        self.GetParent().RefreshItems()
-
-
-class PipelineTree(PipelineTreeMixin, wx.TreeCtrl):
+class PipelineTree(TreeCtrlPlus):
     """TreeCtrl for workspace.
-    """
-    
+    """    
     def __init__(self, *args, **kwargs):
+        """Initializer.
+        """
+        style = kwargs.pop('style', 0)|wx.TR_NO_BUTTONS
+        pipeline = kwargs.pop('pipeline', None)
+        kwargs['style'] = style
         wx.TreeCtrl.__init__(self, *args, **kwargs)
-        root_node = self.AddRoot("WorkSpace")
         # root/toplevel nodes
-        self.root_node = root_node
-        self._model = None
+        self.root_item_id = None # will provided in rebuild_root()
+        self.pipeline = pipeline # will invoke rebuild_root()
 
-    def set_model(self, model):
+    def set_pipeline(self, pipeline):
         """Bind model to the tree.
         """
-        self._model = model
-        self.refresh()
+        self._pipeline = pipeline
+        self.rebuild_root()
 
-    def get_model(self):
-        return self._model
+    def get_pipeline(self):
+        return self._pipeline
 
-    model = property(get_model, set_model)
+    pipeline = property(get_pipeline, set_pipeline)
 
-    def refresh(self):
-        """Refresh tree content to reflect given model.
+    def rebuild_root(self):
+        """Rebuild tree from the toplevel.
         """
-        for node_type in ['file', 'loader', 'filter', 'visualizer',
-                          'visual', 'parameter', 'frame']:
-            parent_node = getattr(self, node_type+'_node', None)
-            node_add_handler = getattr(self, 'add_'+node_type+'_node')
-            if parent_node and node_add_handler:
-                self.DeleteChildren(parent_node)
-                for subnode_info in getattr(self._model, node_type, []):
-                    node_add_handler(subnode_info)
+        self.DeleteAllItems()
+        root_item_id = self.AddRoot("<<Data>>")
+        root_object = None
+        if self.pipeline:
+            root_object = self.pipeline.root
+        self.root_item_id = root_item_id
+        self.SetPyData(root_item_id, root_object)
+        self.rebuild_tree(root_item_id)
 
-    def add_node(self, parent_node, node_info):
-        """Common node_add handler.
+    def rebuild_tree(self, item_id):
+        """Rebuild subtree beneath the given item_id.
         """
-        node = self.AppendItem(parent_node, unicode(node_info))
-        self.SetPyData(node, node_info)
-        
-        return node
+        node_data = self.GetPyData(item_id)
+        if node_data is None:
+            return
+        for child in node_data.children:
+            child_id = self.AppendItem(item_id, '%s::%s' %(child.class_name, child.name))
+            self.SetPyData(child_id, child)
+            self.rebuild_tree(child_id)
 
-    def add_file_node(self, node_info):
-        """Adds file node to the tree.
-        """
-        node = self.add_node(self.file_node, node_info)
-        
-    def add_loader_node(self, node_info):
-        """Adds loader node to the tree.
-        """
-        node = self.add_node(self.loader_node, node_info)
-        
-    def add_filter_node(self, node_info):
-        """Adds filter node to the tree.
-        """
-        node = self.add_node(self.filter_node, node_info)
-        
-    def add_visualizer_node(self, node_info):
-        """Adds visualizer node to the tree.
-        """
-        node = self.add_node(self.visualizer_node, node_info)
-
-    def add_visual_node(self, node_info):
-        """Adds visual node to the tree.
-        """
-        node = self.add_node(self.visual_node, node_info)
-        
-    def add_parameter_node(self, node_info):
-        """Adds parameter node to the tree.
-        """
-        node = self.add_node(self.parameter_node, node_info)
-    
-    def add_frame_node(self, node_info):
-        """Adds frame node to the tree.
-        """
-        node = self.add_node(self.frame_node, node_info)
-        
 
 class PipelinePanel(wx.Panel):
     """Data panel for browser.
@@ -203,13 +65,19 @@ class PipelinePanel(wx.Panel):
         """
         wx.Panel.__init__(self, *args, **kwargs)
         # workspace tree control
-        tree_ctrl = PipelineTree(
-            self, -1, style=wx.SUNKEN_BORDER|wx.TR_HAS_BUTTONS|wx.TR_HIDE_ROOT)
+        tree_ctrl = PipelineTree(self, -1, style=wx.SUNKEN_BORDER)
+        # buttons
+        add_button = wx.Button(self, -1, '+')
+        del_button = wx.Button(self, -1, '-')
         # name bindings
         self.tree_ctrl = tree_ctrl
         # sizer
+        button_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        button_sizer.Add(add_button, 0, wx.ALL, 0)
+        button_sizer.Add(del_button, 0, wx.ALL, 0)
         root_sizer = wx.BoxSizer(wx.VERTICAL)
         root_sizer.Add(tree_ctrl, 1, wx.ALL|wx.EXPAND, 0)
+        root_sizer.Add(button_sizer, 0, wx.ALL, 5)
         root_sizer.SetMinSize((200, -1))
         self.SetSize((200, 600))
         self.SetSizer(root_sizer)
@@ -217,20 +85,20 @@ class PipelinePanel(wx.Panel):
 
 
 if __name__=='__main__':
-    
-    class DummyNode(object):
 
-        def __init__(self, label):
-            self.label = label
-
-        def __unicode__(self):
-            return self.label
-
-    class DummyModel(object):
-
-        def __init__(self):
-            self.file = [DummyNode('FooFile'), DummyNode('BarFile')]
-            self.filter = [DummyNode('BazFilter'), DummyNode('QuxFilter')]
+    pipeline = Pipeline()
+    filter1 = PipelineItem('Filter 1')
+    filter2 = PipelineItem('Filter 2')
+    filter3 = PipelineItem('Filter 3')
+    renderer1 = PipelineItem('Renderer 1')
+    renderer2 = PipelineItem('Renderer 2')
+    renderer3 = PipelineItem('Renderer 3')
+    filter1.connect(pipeline.root)
+    filter2.connect(filter1)
+    filter3.connect(filter2)
+    renderer1.connect(filter1)
+    renderer2.connect(filter2)
+    renderer3.connect(filter3)
     
     class App(wx.App):
         """Demonstrative application.
@@ -241,8 +109,7 @@ if __name__=='__main__':
             frame = wx.Frame(None, -1, u'Pipeline Panel Demo')
             pipeline_panel = PipelinePanel(frame, -1)
             tree = pipeline_panel.tree_ctrl
-            tree.model = DummyModel()
-            tree.refresh()
+            tree.pipeline = pipeline
             sizer = wx.BoxSizer(wx.VERTICAL)
             sizer.Add(pipeline_panel, 1, wx.ALL|wx.EXPAND, 5)
             frame.SetSizer(sizer)

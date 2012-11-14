@@ -1,0 +1,3 @@
+# coding: utf-8
+"""Various utility classes.
+"""

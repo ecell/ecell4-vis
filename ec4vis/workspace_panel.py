@@ -5,9 +5,10 @@ import glob, os, os.path
 import wx
 from wx.lib import filebrowsebutton
 
+from utils_wx import TreeCtrlPlus
+
 icons_path = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), 'resources', 'icons')
-
 
 
 class Ec4DirectoryScanner(object):
@@ -27,45 +28,14 @@ class Ec4DirectoryScanner(object):
         pass
 
 
-class WorkspaceTree(wx.TreeCtrl):
-        
-    BINDINGS = (
-        ('BEGIN_DRAG', 'OnBeginDrag'),
-        ('BEGIN_RDRAG', 'OnBeginRDrag'),
-        ('END_DRAG', 'OnEndDrag'),
-        ('BEGIN_LABEL_EDIT', 'OnBeginLabelEdit'),
-        ('END_LABEL_EDIT', 'OnEndLabelEdit'),
-        ('DELETE_ITEM', 'OnDeleteItem'),
-        ('GET_INFO', 'OnGetInfo'),
-        ('SET_INFO', 'OnSetInfo'),
-        ('ITEM_ACTIVATED', 'OnItemActivated'),
-        ('ITEM_COLLAPSED', 'OnItemCollapsed'),
-        ('ITEM_COLLAPSING', 'OnItemCollapsing'),
-        ('ITEM_EXPANDED', 'OnItemExpanded'),
-        ('ITEM_EXPANDING', 'OnItemExpanding'),
-        ('ITEM_RIGHT_CLICK', 'OnItemRightClick'),
-        ('ITEM_MIDDLE_CLICK', 'OnItemMiddleClick'),
-        ('SEL_CHANGED', 'OnSelChanged'),
-        ('SEL_CHANGING', 'OnSelChanging'),
-        ('KEY_DOWN', 'OnKeyDown'),
-        ('ITEM_GETTOOLTIP', 'OnItemGetToolTip'),
-        ('ITEM_MENU', 'OnItemMenu'),
-        ('STATE_IMAGE_CLICK', 'OnStateImageClick'),
-        )    
-
+class WorkspaceTree(TreeCtrlPlus):
 
     def __init__(self, *args, **kwargs):
         """Initializer.
         """
-        wx.TreeCtrl.__init__(self, *args, **kwargs)
+        TreeCtrlPlus.__init__(self, *args, **kwargs)
         image_size = (16, 16)
         self.image_list = wx.ImageList(*image_size)
-        """
-        self.folder_image_id = self.image_list.Add(
-            wx.ArtProvider_GetBitmap(wx.ART_FOLDER, wx.ART_OTHER, image_size))
-        self.file_image_id = self.image_list.Add(
-            wx.ArtProvider_GetBitmap(wx.ART_NORMAL_FILE, wx.ART_OTHER, image_size))
-            """
         self.folder_image_id = self.image_list.Add(
             wx.Image(os.path.join(icons_path, 'folder_open.png'),
                      wx.BITMAP_TYPE_PNG).ConvertToBitmap())
@@ -77,11 +47,6 @@ class WorkspaceTree(wx.TreeCtrl):
                      wx.BITMAP_TYPE_PNG).ConvertToBitmap())
         self.SetImageList(self.image_list)
         self._root_path = os.getcwd()
-
-        for evt_name, handler_name in self.BINDINGS:
-            macro = getattr(wx, 'EVT_TREE_'+evt_name)
-            handler = getattr(self, handler_name)
-            self.Bind(macro, handler, self)
         self.rebuild_root()
 
     def get_root_path(self):
@@ -142,7 +107,7 @@ class WorkspaceTree(wx.TreeCtrl):
                 child_path = os.path.join(node_path, child_text)
                 if os.path.isdir(child_path):
                     image_id = self.folder_image_id
-                    if glob.glob(os.path.join(node_path, '*.h5')):
+                    if glob.glob(os.path.join(child_path, '*.h5')):
                         image_id = self.bundle_image_id
                     self.SetItemImage(
                         child_id, self.image_id, wx.TreeItemIcon_Normal)
@@ -164,7 +129,7 @@ class WorkspaceTree(wx.TreeCtrl):
             self.SetItemHasChildren(child_id, is_dir)
             if is_dir:
                 image_id = self.folder_image_id
-                if glob.glob(os.path.join(node_path, '*.h5')):
+                if glob.glob(os.path.join(child_path, '*.h5')):
                     image_id = self.bundle_image_id
                 self.SetItemImage(child_id, image_id, wx.TreeItemIcon_Normal)
                 self.SetItemImage(child_id, image_id, wx.TreeItemIcon_Expanded)
@@ -173,114 +138,18 @@ class WorkspaceTree(wx.TreeCtrl):
                 self.SetItemImage(child_id, image_id, wx.TreeItemIcon_Normal)
         return
 
-    def OnBeginDrag(self, evt):
-        """Handler called on begin item dragging.
-        """
-        pass # do nothing atm
-
-    def OnBeginRDrag(self, evt):
-        """Handler called on begin item dragging with right button.
-        """
-        pass # do nothing atm
-
-    def OnEndDrag(self, evt):
-        """Handler called on end item dragging.
-        """
-        pass # do nothing atm
-
-    def OnBeginLabelEdit(self, evt):
-        """Handler called on begin editing label on an item.
-        """
-        pass # do nothing atm
-
-    def OnEndLabelEdit(self, evt):
-        """Handler called on end editing label on an item.
-        """
-        pass # do nothing atm
-
-    def OnDeleteItem(self, evt):
-        """Handler called on deleting item.
-        """
-        pass # do nothing atm
-
-    def OnGetInfo(self, evt):
-        """Handler called on getting node info.
-        """
-        pass # do nothing atm
-
-    def OnSetInfo(self, evt):
-        """Handler called on getting node info.
-        """
-        pass # do nothing atm
-
-    def OnItemActivated(self, evt):
-        """Handler called on activating item.
-        """
-        pass # do nothing atm
-
     def OnItemCollapsed(self, evt):
         """Handler called on an item has collapsed.
         """
         item_id = evt.GetItem()
         self.DeleteChildren(item_id)
 
-    def OnItemCollapsing(self, evt):
-        """Handler called on collapsing an item.
-        """
-        pass # do nothing atm
-
-    def OnItemExpanded(self, evt):
-        """Handler called on an item has expanded.
-        """
-        pass # do nothing atm
-        
     def OnItemExpanding(self, evt):
         """Handler called on expanding item.
         """
         item_id = evt.GetItem()
         self.rebuild_tree(item_id)
 
-    def OnItemRightClick(self, evt):
-        """Handler called on right-clicking item.
-        """
-        pass # do nothing atm
-
-    def OnItemMiddleClick(self, evt):
-        """Handler called on middle-clicking item.
-        """
-        pass # do nothing atm
-
-    def OnSelChanged(self, evt):
-        """Handler called on user has changed item selection.
-        """
-        pass # do nothing atm
-
-    def OnSelChanging(self, evt):
-        """Handler called on changing selection.
-        """
-        pass # do nothing atm
-
-    def OnKeyDown(self, evt):
-        """Handler called on key down.
-        """
-        pass # do nothing atm
-
-    def OnItemGetToolTip(self, evt):
-        """Handler called on getting tooltip
-        """
-        pass # do nothing atm
-
-    def OnItemMenu(self, evt):
-        """Handler called on requiring context menu.
-        """
-        pass # do nothing atm
-
-    def OnStateImageClick(self, evt):
-        """Handler called on clicing state image.
-        """
-        pass # do nothing atm
-
-        
 
 class WorkspacePanel(wx.Panel):
     """Data panel for browser.
