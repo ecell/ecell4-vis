@@ -1,5 +1,5 @@
 # coding: utf-8
-"""menubar.py --- Application menubar.
+"""ec4vis.menu_bar --- Application menubar.
 """
 import wx
 
@@ -11,8 +11,8 @@ MENU_STRUCTURE = (
         ('about', 'About', '', 'About this application.'),
         ('quit', 'Quit', 'Ctrl-Q', 'Quit application'),
         )),
-    ('Workspace', (
-        ('set_root', 'Set Root Directory...', 'Ctrl-O', 'Set Root Directory for Workspace.'),
+    #('Workspace', (
+    #    ('set_root', 'Set Root Directory...', 'Ctrl-O', 'Set Root Directory for Workspace.'),
         #('save', 'Save Workspace', 'Ctrl-S', 'Save current workspace state.'),
         #('save_as', 'Save Workspace As...', 'Ctrl-Shift-S', 'Save current workspace state with given filename.'),
         #('load', 'Load Workspace...', 'Ctrl-O', 'Load current workspace state.'),
@@ -21,13 +21,13 @@ MENU_STRUCTURE = (
         #('add_loader', 'Add Loader...', '', 'Add a loader.'),
         #('add_visualizer', 'Add Visualizer...', '', 'Add a visualizer.'),
         #('add_filter', 'Add Filter...', '', 'Add a filter.'),
-        )),
-    ('Visual', (
-        ('toggle', 'Toggle Visibility', '', 'Toggle visivility.'),
-        )),
-    ('Parameter', (
-        ('import', 'Import Parameters...', '', 'Import parameters.'),
-        )),
+    #    )),
+    #('Visual', (
+    #    ('toggle', 'Toggle Visibility', '', 'Toggle visivility.'),
+    #    )),
+    #('Parameter', (
+    #    ('import', 'Import Parameters...', '', 'Import parameters.'),
+    #    )),
     )
 
 
@@ -55,6 +55,11 @@ class AppMenuBar(wx.MenuBar):
                 setattr(self, section_name.lower()+'_'+attr_bit, menu_item)
         # associate menubar to parent.
         parent.SetMenuBar(self)
+
+    def finalize(self):
+        """Finalizer.
+        """
+        # placeholder atm
 
 
 if __name__=='__main__':

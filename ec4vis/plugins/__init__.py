@@ -1,6 +1,6 @@
 # coding: utf-8
 """
-Plugin related utilities.
+ec4vis.plugins --- Plugin related utilities.
 
 Plugin is a simple module which may contain arbitrary set of classes.
 You may define Visualizer to be registered, patch existing module(s),
