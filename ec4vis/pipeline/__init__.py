@@ -171,6 +171,8 @@ class PipelineNode(object):
         self.name = name
         self.parent = None
         self.children = []
+        self.upward_event_handlers = {}
+        self.downward_event_handlers = {}
 
     def __repr__(self):
         """Retrurns in <class_name: instance_name> format.
@@ -263,12 +265,16 @@ class PipelineNode(object):
     def handle_upward_event(self, pipeline_event):
         """Handles upstreaming pipeline event. Subclass may override.
         """
-        return None
+        event_handlers = self.upward_event_handlers.get(pipeline_event.__class__, [])
+        for event_handler in event_handlers:
+            event_handler(self, pipeline_event)
 
     def handle_downward_event(self, pipeline_event):
         """Handles downstreaming pipeline event. Subclass may override.
         """
-        return None
+        event_handlers = self.downward_event_handlers.get(pipeline_event.__class__, [])
+        for event_handler in event_handlers:
+            event_handler(self, pipeline_event)
 
     def propagate_up(self, pipeline_event):
         """Propagates event upward.

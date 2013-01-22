@@ -11,22 +11,23 @@ except ImportError:
     p = os.path.abspath(__file__); sys.path.insert(0, p[:p.rindex(os.sep+'ec4vis')])
 
 from ec4vis.logger import debug
-from ec4vis.inspector import Inspector
 
 
 class InspectorPage(wx.Panel):
     """Abstract superclass for pages in a inspector notebook.
     """
     def __init__(self, *args, **kwargs):
-        wx.Panel.__init__(self, *args, **kwargs)
-        inspector_class = self.get_inspector_class()
-        self.inspector = inspector_class()
-
-    def get_inspector_class(self):
-        """Returns inspector class. Subclass should override.
+        """Initializer.
         """
-        return Inspector
+        wx.Panel.__init__(self, *args, **kwargs)
+        self.sizer = wx.BoxSizer(wx.VERTICAL)
+        self.SetSizer(self.sizer)
+        self.target = None # target object
 
+    def update(self):
+        """Update UI to reflect target status. Subclass should override.
+        """
+        pass
 
 if __name__=='__main__':
     # TBD

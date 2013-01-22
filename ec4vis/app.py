@@ -13,7 +13,9 @@ except ImportError:
     p = os.path.abspath(__file__); sys.path.insert(0, p[:p.rindex(os.sep+'ec4vis')])
 
 from ec4vis.logger import debug, info, logger, DEBUG
+
 from ec4vis.browser import BrowserFrame
+from ec4vis.inspector.datasource.page import DatasourceInspectorPage
 from ec4vis.pipeline import PipelineTree, UpdateEvent
 from ec4vis.plugins import PluginLoader
 from ec4vis.version import VERSION
@@ -70,6 +72,14 @@ class BrowserApp(wx.App):
         pipeline_tree_ctrl = pipeline_panel.tree_ctrl
         # set pipeline to tree
         pipeline_tree_ctrl.pipeline = self.pipeline
+        # add datasource inspector.
+        inspector_notebook = browser.inspector_panel.notebook
+        ds_inspector_page = DatasourceInspectorPage(inspector_notebook, -1)
+        ds_inspector_page.target = self.pipeline.root
+        def ds_update_handler(node, event):
+            ds_inspector_page.update()
+        self.pipeline.root.downward_event_handlers.setdefault(UpdateEvent, []).append(ds_update_handler)
+        inspector_notebook.AddPage(ds_inspector_page, 'Datasource')
         # outlet bindings
         self.browser = browser
         self.menu_bar = browser.menu_bar
