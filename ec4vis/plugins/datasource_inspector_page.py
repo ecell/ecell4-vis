@@ -3,7 +3,7 @@
 """
 import wx, wx.aui
 
-# this stuff enables module-wise execution
+# this allows module-wise execution
 try:
     import ec4vis
 except ImportError:
@@ -11,7 +11,6 @@ except ImportError:
     p = os.path.abspath(__file__); sys.path.insert(0, p[:p.rindex(os.sep+'ec4vis')])
 
 from ec4vis.logger import debug, log_call
-from ec4vis.pipeline import RootPipelineNode
 from ec4vis.inspector.page import InspectorPage, register_inspector_page
 
 
@@ -28,6 +27,7 @@ class DatasourceInspectorPage(InspectorPage):
         h_sizer = wx.BoxSizer(wx.HORIZONTAL)
         h_sizer.Add(label, 0, wx.EXPAND|wx.ALL, 0)
         h_sizer.Add(text, 1, wx.EXPAND|wx.ALL, 0)
+        # self.sizer comes from parent.
         self.sizer.Add(h_sizer, 0, wx.EXPAND|wx.ALL, 10)
 
     @log_call
@@ -41,7 +41,7 @@ class DatasourceInspectorPage(InspectorPage):
             self.uri_text.SetValue('')
         
 
-register_inspector_page(RootPipelineNode, DatasourceInspectorPage)
+register_inspector_page('RootPipelineNode', DatasourceInspectorPage)
     
 
 if __name__=='__main__':

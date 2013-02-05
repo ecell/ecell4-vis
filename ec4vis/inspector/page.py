@@ -3,7 +3,7 @@
 """
 import wx, wx.aui
 
-# this stuff enables module-wise execution
+# this allows module-wise execution
 try:
     import ec4vis
 except ImportError:
@@ -18,11 +18,11 @@ from ec4vis.inspector import Inspector
 INSPECTOR_PAGE_REGISTRY = {}
 
 @log_call
-def register_inspector_page(pipeline_node_class, page_class):
+def register_inspector_page(node_class_name, page_class):
     """Register new page class to registry.
     """
-    INSPECTOR_PAGE_REGISTRY[pipeline_node_class] = page_class
-    debug('registered inspector %s for pipeline node type %s' %(page_class, pipeline_node_class))
+    INSPECTOR_PAGE_REGISTRY[node_class_name] = page_class
+    debug('registered inspector %s for pipeline node type %s' %(page_class, node_class_name))
     
 
 class InspectorPage(wx.Panel, Inspector):

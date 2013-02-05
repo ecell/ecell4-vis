@@ -5,7 +5,7 @@ import os # required for os.getcwd in FilesystemTree
 import wx, wx.aui
 from wx.lib.filebrowsebutton import DirBrowseButton
 
-# this stuff enables module-wise execution
+# this allows module-wise execution
 try:
     import ec4vis
 except ImportError:

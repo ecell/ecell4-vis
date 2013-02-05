@@ -3,7 +3,7 @@
 """
 import wx, wx.aui, wx.lib.newevent
 
-# this stuff enables module-wise execution
+# this allows module-wise execution
 try:
     import ec4vis
 except ImportError:

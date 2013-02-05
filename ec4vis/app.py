@@ -5,7 +5,7 @@ from os import getcwd
 
 import wx
 
-# this stuff enables module-wise execution
+# this allows module-wise execution
 try:
     import ec4vis
 except ImportError:
@@ -352,13 +352,16 @@ class BrowserApp(wx.App):
         # If there are already corresponding inspector, just focus it.
         inspector_page_index, inspector_page_instance = self.inspector_notebook.find_page_for_target(selected_node)
         if inspector_page_index is None:
+            debug('No page exists, trying')
             # find PipelineNode class and (try to) load new inspector page.
-            pipeline_node_type = selected_node.__class__
-            inspector_page_class = INSPECTOR_PAGE_REGISTRY.get(pipeline_node_type, None)
+            pipeline_node_type_name = selected_node.__class__.__name__
+            debug('\n'.join(str((k, v)) for k, v in INSPECTOR_PAGE_REGISTRY.items()))
+            inspector_page_class = INSPECTOR_PAGE_REGISTRY.get(pipeline_node_type_name, None)
             if inspector_page_class is None:
-                wx.MessageBox('Node type %s does not have inspector.' %(pipeline_node_type),
+                wx.MessageBox('Node type %s does not have inspector.' %(pipeline_node_type_name),
                               'Invalid operation.')
                 return
+            debug('inspector page class: %s' %(inspector_page_class))
             # else
             inspector_page_index, inspector_page_instance = self.inspector_notebook.create_page(
                 inspector_page_class, selected_node.name, target=selected_node)

@@ -4,7 +4,7 @@
 import sys
 
 
-# this stuff enables module-wise execution
+# this allows module-wise execution
 try:
     import ec4vis
 except ImportError:
@@ -349,9 +349,16 @@ class PipelineNode(object):
         if observer in self.observers:
             self.observers.remove(observer)
 
+    def internal_update(self):
+        """Update internal status.
+        """
+
+    @log_call
     def status_changed(self):
         """Notifies status change (to inspectors).
         """
+        self.internal_update()
+        debug('%s' %self.observers)
         for observer in self.observers:
             observer.update()
 
@@ -401,10 +408,10 @@ class RootPipelineNode(PipelineNode):
             return self.datasource
         elif spec is UriSpec:
             return self.datasource.uri # datasource must support this
-        # else
-        raise ValueError(
-            '%s does not support %s'
-            %(self.__class__.__name__, spec.__name__))
+        else:
+            raise ValueError(
+                '%s does not support %s'
+                %(self.__class__.__name__, spec.__name__))
 
     def connect(self, parent):
         """RootPipelineNode denies connect().
