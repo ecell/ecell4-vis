@@ -37,8 +37,6 @@ class Vtk3dVisualizerNode(VisualizerNode):
               %id(render_window))
         self.render_window = render_window
 
-register_pipeline_node(Vtk3dVisualizerNode)
-
 
 if __name__=='__main__':
     # TBD test stuff.

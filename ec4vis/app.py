@@ -337,7 +337,6 @@ class BrowserApp(wx.App):
         self.pipeline_tree_ctrl.rebuild_parent(selected_tree_item_id)
         # phase 5: delete pipeline node
         del selected_pipeline_node
-        
 
     @log_call
     def OnPipelineShowInspectorMenu(self, event):

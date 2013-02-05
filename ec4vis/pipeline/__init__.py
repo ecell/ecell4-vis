@@ -94,6 +94,31 @@ class DatasourceSpec(PipelineSpec):
     pass
 
 
+class Observer(object):
+    """Abstract base class for observers.
+    """
+    def __init__(self, target):
+        self.target = None
+        self.bind_target(target)
+
+    def bind_target(self, target):
+        self.target = target
+        if self.target:
+            self.target.add_observer(self)
+
+    def unbind_target(self):
+        if self.target:
+            self.target.remove_observer(self)
+            self.target = None
+        
+    def update(self):
+        """Called on any changes on target object.
+
+        Subclass should override this method to reflect target changes on the observer.
+        """
+        return NotImplemented
+
+
 class PipelineNode(object):
     """Represents an item in pipeline.
 

@@ -11,8 +11,7 @@ except ImportError:
     p = os.path.abspath(__file__); sys.path.insert(0, p[:p.rindex(os.sep+'ec4vis')])
 
 from ec4vis.logger import debug, log_call
-from ec4vis.inspector import Inspector
-
+from ec4vis.utils.wx_.observer_page import ObserverPage
 
 # inspector page registry
 INSPECTOR_PAGE_REGISTRY = {}
@@ -25,35 +24,14 @@ def register_inspector_page(node_class_name, page_class):
     debug('registered inspector %s for pipeline node type %s' %(page_class, node_class_name))
     
 
-class InspectorPage(wx.Panel, Inspector):
+class InspectorPage(ObserverPage):
     """Abstract superclass for pages in a inspector notebook.
     """
     def __init__(self, *args, **kwargs):
         """Initializer.
         """
         # this should be before superclass initializer.
-        target = kwargs.pop('target')
-        wx.Panel.__init__(self, *args, **kwargs)
-        self.sizer = wx.BoxSizer(wx.VERTICAL)
-        self.SetSizer(self.sizer)
-        self.target = target
-        if self.target:
-            self.target.add_observer(self)
-            debug('added %s to %s\'s ovservers.' %(self, target))
-
-    @log_call
-    def update(self):
-        """Update UI to reflect target status. Subclass should override.
-        """
-        pass
-
-    @log_call
-    def finalize(self):
-        """Finalizer.
-        """
-        if self.target:
-            self.target.remove_observer(self)
-
+        ObserverPage.__init__(self, *args, **kwargs)
 
 
 if __name__=='__main__':
