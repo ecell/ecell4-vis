@@ -87,7 +87,8 @@ class UriSpec(PipelineSpec):
     """
     pass
 
-class Datasourcepec(PipelineSpec):
+
+class DatasourceSpec(PipelineSpec):
     """Data spec for Datasource object.
     """
     pass
@@ -173,6 +174,8 @@ class PipelineNode(object):
     
     """
     CLASS_NAME = None # subclass may override this
+    INPUT_SPEC = []
+    OUTPUT_SPEC = []
     
     def __init__(self, name=None):
         """Initializer.
@@ -203,16 +206,27 @@ class PipelineNode(object):
         return self.CLASS_NAME or self.__class__.__name__
 
     # spec-related interfaces
+    @classmethod
+    def class_input_spec(cls):
+        """Returns input specification. Subclass may override this.
+        """
+        return cls.INPUT_SPEC
+
+    @classmethod
+    def class_output_spec(cls):
+        """Returns output specification. Subclass may override this.
+        """
+        return cls.OUTPUT_SPEC
 
     def get_input_spec(self):
         """Returns input specification. Subclass may override this.
         """
-        return []
+        return self.class_input_spec()
 
     def get_output_spec(self):
         """Returns output specification. Subclass may override this.
         """
-        return []
+        return self.class_output_spec()
 
     @property
     def input_spec(self):
@@ -372,11 +386,13 @@ class RootPipelineNode(PipelineNode):
         debug('RootPipelineNode::datasource set to %s' %datasource)
 
     datasource = property(get_datasource, set_datasource)
-    
-    def get_output_spec(self):
+
+    #def get_output_spec(self):
+    @staticmethod
+    def get_output_spec():
         """Returns output specification. Subclass may override this.
         """
-        return [DatsourceSpec, UriSpec]
+        return [DatasourceSpec, UriSpec]
 
     def request_data(self, spec):
         """Returns datasource or uri

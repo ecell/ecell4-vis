@@ -10,6 +10,15 @@ extend UI or whatever you want...
 from glob import glob
 from os.path import dirname, join, splitext, isdir, exists
 
+# this stuff enables module-wise execution
+try:
+    import ec4vis
+except ImportError:
+    import sys, os
+    p = os.path.abspath(__file__); sys.path.insert(0, p[:p.rindex(os.sep+'ec4vis')])
+
+from ec4vis.logger import debug, info, log_call, logger, DEBUG
+
 
 class PluginLoader(object):
     """Plugins loader.
@@ -32,7 +41,8 @@ class PluginLoader(object):
                 mod_fullpath = mod_path+'.'+modname
                 __import__(mod_fullpath)
                 yield (mod_fullpath, True)
-            except:
+            except Exception, e:
+                debug('**FAILED**: %s' %str(e))
                 yield (mod_fullpath, False)
         return
 

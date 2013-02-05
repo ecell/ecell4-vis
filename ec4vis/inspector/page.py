@@ -33,7 +33,6 @@ class InspectorPage(wx.Panel, Inspector):
         """
         # this should be before superclass initializer.
         target = kwargs.pop('target')
-        debug('***********target is set to %s************' %target)
         wx.Panel.__init__(self, *args, **kwargs)
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         self.SetSizer(self.sizer)

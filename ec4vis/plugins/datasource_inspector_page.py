@@ -34,10 +34,11 @@ class DatasourceInspectorPage(InspectorPage):
     def update(self):
         """Update UI.
         """
-        if self.target is None:
-            self.uri_text.SetValue('')
-        else:
+        if (self.target and hasattr(self.target, 'datasource')
+            and self.target.datasource.uri):
             self.uri_text.SetValue(self.target.datasource.uri)
+        else:
+            self.uri_text.SetValue('')
         
 
 register_inspector_page(RootPipelineNode, DatasourceInspectorPage)

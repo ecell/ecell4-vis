@@ -8,7 +8,7 @@ except ImportError:
     p = os.path.abspath(__file__); sys.path.insert(0, p[:p.rindex(os.sep+'ec4vis')])
 
 from ec4vis.logger import debug, log_call
-from ec4vis.pipeline import register_pipeline_node
+from ec4vis.pipeline import register_pipeline_node, PipelineSpec
 from ec4vis.visualizer import VisualizerNode
 
 
@@ -20,6 +20,9 @@ class Vtk3dVisualizerNode(VisualizerNode):
     <Vtk3dVisualizerNode: vtk3dvisualizernode>
     
     """
+    INPUT_SPEC = []
+    OUTPUT_SPEC = []
+    
     def __init__(self, *args, **kwargs):
         """Initializer.
         """

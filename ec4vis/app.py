@@ -281,8 +281,14 @@ class BrowserApp(wx.App):
         parent_tree_item_id, parent_node = self.check_parent_node_selected()
         if parent_node is None:
             return
-        # else -- 
-        dlg = AddPipelineNodeDialog(self.browser, choices=sorted(PIPELINE_NODE_REGISTRY.keys()))
+        # else --
+        # check spec for parent_node
+        node_class_choices = [
+            node_name
+            for node_name, node_class
+            in PIPELINE_NODE_REGISTRY.items()
+            if set(node_class.class_input_spec()).issubset(parent_node.output_spec)]
+        dlg = AddPipelineNodeDialog(self.browser, choices=node_class_choices)
         new_node = None
         if dlg.ShowModal()==wx.ID_OK:
             label_name = dlg.label_name
@@ -354,7 +360,9 @@ class BrowserApp(wx.App):
                               'Invalid operation.')
                 return
             # else
-            inspector_page_index, inspector_page_instance = self.inspector_notebook.create_page(inspector_page_class, selected_node.name, target=selected_node)
+            inspector_page_index, inspector_page_instance = self.inspector_notebook.create_page(
+                inspector_page_class, selected_node.name, target=selected_node)
+            inspector_page_instance.update()
         self.inspector_notebook.SetSelection(inspector_page_index)
 
     @log_call

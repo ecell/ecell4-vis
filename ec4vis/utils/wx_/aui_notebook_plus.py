@@ -112,7 +112,6 @@ class AuiNotebookPlusWithTargetBindingPage(AuiNotebookPlus):
         else:
             for page_index in range(self.GetPageCount()):
                 page_instance = self.GetPage(page_index)
-                debug('********page instance %s, target=%s ********' %page_instance, getattr(page_instance, 'target'))
                 if getattr(page_instance, 'target', None)==target:
                     found_page_index = page_index
                     found_page_instance = page_instance
