@@ -4,17 +4,31 @@
 import wx
 from wx.lib.mixins import treemixin
 
-# this stuff enables module-wise execution
+# this allows module-wise execution
 try:
     import ec4vis
 except ImportError:
     import sys, os
     p = os.path.abspath(__file__); sys.path.insert(0, p[:p.rindex(os.sep+'ec4vis')])
 
-from ec4vis.logger import debug
+from ec4vis.logger import debug, log_call
 from ec4vis.utils.wx_ import TreeCtrlPlus
 from ec4vis.pipeline import PipelineTree, PipelineNode
 
+
+class PipelineTreeItemMenu(wx.Menu):
+    """Context menu shown on pipeline tree item.
+    """
+    def __init__(self):
+        wx.Menu.__init__(self)
+        # populate menu items
+        add_node_menu_id = self.Append(-1, "Add...")
+        delete_node_menu_id = self.Append(-1, "Delete")
+        show_inspector_menu_id = self.Append(-1, "Show Inspector")
+        self.add_node_menu_id = add_node_menu_id
+        self.delete_node_menu_id = delete_node_menu_id
+        self.show_inspector_menu_id = show_inspector_menu_id
+        
 
 class PipelineTreeCtrl(TreeCtrlPlus):
     """TreeCtrl for workspace.
@@ -25,10 +39,24 @@ class PipelineTreeCtrl(TreeCtrlPlus):
         style = kwargs.pop('style', 0)|wx.TR_NO_BUTTONS
         kwargs['style'] = style
         wx.TreeCtrl.__init__(self, *args, **kwargs)
+        # tree item menu
+        self.tree_menu = PipelineTreeItemMenu()
         # initial pipeline set to None
         self._pilepline = None
-        # root/toplevel nodes
-        self.root_item_id = None # will provided in rebuild_root()
+
+    @log_call
+    def get_subtree_data(self, tree_item_id):
+        """Recursively collects target data from subtree of given tree_item_id.
+        """
+        if self.GetChildrenCount(tree_item_id):
+            subdata = []
+            child_item_id, cookie = self.GetFirstChild(tree_item_id)
+            while child_item_id.IsOk():
+                subdata.extend(self.get_subtree_data(child_item_id))
+                child_item_id, cookie = self.GetNextChild(tree_item_id, cookie)
+            return subdata
+        else:
+            return [self.GetPyData(tree_item_id)]
 
     def set_pipeline(self, pipeline):
         """Bind model to the tree.
@@ -42,6 +70,25 @@ class PipelineTreeCtrl(TreeCtrlPlus):
 
     pipeline = property(get_pipeline, set_pipeline)
 
+    @property
+    def selected_tree_item_id(self):
+        """Returns tree item currently selected.
+        """
+        selected_item_id = self.GetSelection()
+        if selected_item_id and selected_item_id.IsOk():
+            return selected_item_id
+        # else
+        return None
+
+    @property
+    def selected_pipeline_node(self):
+        """Returns PipelineNode for currently selected tree item.
+        """
+        data = None
+        if self.selected_tree_item_id:
+            data = self.GetPyData(self.selected_tree_item_id)
+        return data
+
     def rebuild_root(self):
         """Rebuild tree from the toplevel.
         """
@@ -51,7 +98,6 @@ class PipelineTreeCtrl(TreeCtrlPlus):
         root_object = None
         if self.pipeline:
             root_object = self.pipeline.root
-        self.root_item_id = root_item_id
         self.SetPyData(root_item_id, root_object)
         self.rebuild_tree(root_item_id)
         debug('rebuild_root() succellfully.')
@@ -59,6 +105,8 @@ class PipelineTreeCtrl(TreeCtrlPlus):
     def rebuild_tree(self, item_id):
         """Rebuild subtree beneath the given item_id.
         """
+        # delete children beneath.
+        self.DeleteChildren(item_id)
         debug('PipelineTreeCtrl::rebuild_tree() building under item #%s' %item_id)
         node_data = self.GetPyData(item_id)
         if node_data is None:
@@ -67,6 +115,15 @@ class PipelineTreeCtrl(TreeCtrlPlus):
             child_id = self.AppendItem(item_id, '%s::%s' %(child.class_name, child.name))
             self.SetPyData(child_id, child)
             self.rebuild_tree(child_id)
+
+    def rebuild_parent(self, item_id):
+        """Rebuild parent tree of given item_id.
+        """
+        self.rebuild_tree(self.GetItemParent(item_id))
+
+    def popup_tree_menu(self):
+        self.PopupMenu(self.tree_menu)
+
 
 
 class PipelinePanel(wx.Panel):
@@ -78,18 +135,11 @@ class PipelinePanel(wx.Panel):
         wx.Panel.__init__(self, *args, **kwargs)
         # workspace tree control
         tree_ctrl = PipelineTreeCtrl(self, -1, style=wx.SUNKEN_BORDER)
-        # buttons
-        add_button = wx.Button(self, -1, '+')
-        del_button = wx.Button(self, -1, '-')
         # name bindings
         self.tree_ctrl = tree_ctrl
         # sizer
-        button_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        button_sizer.Add(add_button, 0, wx.ALL, 0)
-        button_sizer.Add(del_button, 0, wx.ALL, 0)
         root_sizer = wx.BoxSizer(wx.VERTICAL)
         root_sizer.Add(tree_ctrl, 1, wx.ALL|wx.EXPAND, 0)
-        root_sizer.Add(button_sizer, 0, wx.ALL, 5)
         root_sizer.SetMinSize((200, -1))
         self.SetSize((200, 600))
         self.SetSizer(root_sizer)

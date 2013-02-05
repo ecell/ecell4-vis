@@ -11,6 +11,15 @@ MENU_STRUCTURE = (
         ('about', 'About', '', 'About this application.'),
         ('quit', 'Quit', 'Ctrl-Q', 'Quit application'),
         )),
+    ('Datasource', (
+        # attr_bit, label, accel_key, tip
+        ('add', 'Add...', '', 'Add datasource page.'),
+        ('remove', 'Remove', '', 'Remove datasource page.'),
+        )),
+    ('Pipeline', (
+        # attr_bit, label, accel_key, tip
+        ('add_node', 'Add Node...', '', 'Add pipeline node.'),
+        )),
     #('Workspace', (
     #    ('set_root', 'Set Root Directory...', 'Ctrl-O', 'Set Root Directory for Workspace.'),
         #('save', 'Save Workspace', 'Ctrl-S', 'Save current workspace state.'),
@@ -63,6 +72,7 @@ class AppMenuBar(wx.MenuBar):
 
 
 if __name__=='__main__':
+
     class App(wx.App):
         """Demonstrative application.
         """

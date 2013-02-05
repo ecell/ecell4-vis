@@ -12,9 +12,9 @@ except ImportError:
     import sys, os
     p = os.path.abspath(__file__); sys.path.insert(0, p[:p.rindex(os.sep+'ec4vis')])
 
-from ec4vis.logger import debug, info
+from ec4vis.logger import debug, info, log_call
 from ec4vis.visualizer.page import VisualizerPage
-from ec4vis.visualizer.vtk3d import Vtk3dVisualizer
+from ec4vis.visualizer.vtk3d import Vtk3dVisualizerNode
 from ec4vis.visualizer.vtk3d.wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
 
 
@@ -25,7 +25,7 @@ class Vtk3dVisualizerPage(VisualizerPage):
         VisualizerPage.__init__(self, *args, **kwargs)
         self._aspect_ratio = [4, 3]
         render_window = wxVTKRenderWindowInteractor(self, -1)
-        self.visualizer.set_render_window(render_window)
+        self.target.render_window = render_window
         # bindings
         self.render_window = render_window
         # event bindings
@@ -35,27 +35,24 @@ class Vtk3dVisualizerPage(VisualizerPage):
         if settings:
             self.configure_renderer(settings)
 
+    @log_call
     def finalize(self):
         """Finalize page, visualizer
         """
-        
         VisualizerPage.finalize(self)
-
-    def get_visualizer_class(self):
-        """Returns visualizer class. Subclass should override.
-        """
-        return Vtk3dVisualizer
 
     def _get_aspect_ratio(self):
         return self._aspect_ratio
 
+    @log_call
     def _set_aspect_ratio(self, aspect_ratio):
         self._aspect_ratio = aspect_ratio
-        debug('Vtk3dVisualizerPage::forcing aspect ratio as %s' %aspect_ratio)
+        debug('forcing aspect ratio as %s' %aspect_ratio)
         self.force_aspect_ratio(*self.GetSize())
 
     aspect_ratio = property(_get_aspect_ratio, _set_aspect_ratio)
 
+    @log_call
     def configure_renderer(self, settings):
         """Configure rendering environment.
         """
@@ -78,8 +75,8 @@ class Vtk3dVisualizerPage(VisualizerPage):
         light_kit = vtk.vtkLightKit()
         light_kit.SetKeyLightIntensity(settings.light_intensity)
         light_kit.AddLightsToRenderer(renderer)
-        debug('configure_renderer() successful.')
 
+    @log_call
     def setup_renderer(self):
         """Set up vtk renderers.
         """
@@ -95,8 +92,8 @@ class Vtk3dVisualizerPage(VisualizerPage):
         # Register renderer
         self.render_window.GetRenderWindow().AddRenderer(renderer)
         self.renderer = renderer
-        debug('setup_renderer() successful.')
 
+    @log_call
     def force_aspect_ratio(self, width, height):
         """
         Force size of render_window to follow aspect ratio.
@@ -110,7 +107,8 @@ class Vtk3dVisualizerPage(VisualizerPage):
         width = int(min(width, height*aw/float(ah)))
         height = int(min(height, width*ah/float(aw)))
         self.render_window.SetSize((width, height))
-        
+
+    @log_call
     def OnSize(self, event):
         """Resize handler.
         """
@@ -126,7 +124,8 @@ if __name__=='__main__':
             """Initializer.
             """
             frame = wx.Frame(None, -1, u'DatasourcePanel Demo')
-            visualizer_panel = Vtk3dVisualizerPage(frame, -1)
+            visualizer_node = Vtk3dVisualizerNode()
+            visualizer_panel = Vtk3dVisualizerPage(frame, -1, target=visualizer_node)
             sizer = wx.BoxSizer()
             sizer.Add(visualizer_panel, 1, wx.ALL|wx.EXPAND, 5)
             frame.SetSizer(sizer)

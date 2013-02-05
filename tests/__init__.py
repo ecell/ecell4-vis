@@ -17,7 +17,10 @@ suite = unittest.TestSuite()
 
 module_paths = [
     # packages
+    'ec4vis',
     # modules
+    'ec4vis.app',
+    'ec4vis.workspace',
     ]
 
 modules_dict = {}

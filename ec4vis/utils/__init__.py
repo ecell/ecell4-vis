@@ -14,5 +14,3 @@ import ec4vis
 PACKAGE_PATH = os.path.dirname(os.path.abspath(ec4vis.__file__))
 RESOURCES_PATH = os.path.join(PACKAGE_PATH, 'resources')
 
-
-

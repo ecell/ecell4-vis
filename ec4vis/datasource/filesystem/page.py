@@ -14,13 +14,15 @@ except ImportError:
     p = os.path.abspath(__file__); sys.path.insert(0, p[:p.rindex(os.sep+'ec4vis')])
 
 from ec4vis.datasource.filesystem import FilesystemDatasource
-from ec4vis.datasource.page import DatasourcePage
+from ec4vis.datasource.page import DatasourcePage, register_datasource_page, EVT_DATASOURCE_CHANGED
 from ec4vis.datasource.filesystem.tree import FilesystemTree
 
 
 class FilesystemDatasourcePage(DatasourcePage):
     """Notebook page for filesystem based datasource.
     """
+    DATASOURCE_CLASS = FilesystemDatasource
+    
     def __init__(self, *args, **kwargs):
         DatasourcePage.__init__(self, *args, **kwargs)
         tree_ctrl = FilesystemTree(self, -1)
@@ -40,11 +42,6 @@ class FilesystemDatasourcePage(DatasourcePage):
         sizer.Add(tree_ctrl, 1, wx.ALL|wx.EXPAND, 0)
         self.SetSizer(sizer)
         self.Layout()
-
-    def get_datasource_class(self):
-        """Always returns FilesystemDatasource.
-        """
-        return FilesystemDatasource
 
     def get_root_path(self):
         """Returns root path of the tree.
@@ -67,7 +64,7 @@ class FilesystemDatasourcePage(DatasourcePage):
             self.tree_ctrl.root_path = evt.GetString()
         # reset dataset (to file_path=None)
         self.datasource.file_path = None
-        self.datasource_changed()
+        self.datasource_page_changed()
 
     def on_tree_sel_changed(self, evt):
         """Handler called on selection changed in tree ctrl.
@@ -79,6 +76,9 @@ class FilesystemDatasourcePage(DatasourcePage):
         else:
             self.datasource.path = ''
         self.datasource_changed()
+
+    
+register_datasource_page(FilesystemDatasourcePage)
         
 
 if __name__=='__main__':
@@ -87,8 +87,6 @@ if __name__=='__main__':
     ec4vis_parent = this_filepath[:this_filepath.rindex(os.sep+'ec4vis')]
     ec4vis_test_root = os.path.join(ec4vis_parent, 'tests', 'data', 'fs', 'root')
     
-    from ec4vis.datasource.panel import DatasourcePanel
-
     class App(wx.App):
         """Demonstrative application.
         """
@@ -105,11 +103,16 @@ if __name__=='__main__':
             frame.Show(True)
             self.frame = frame
             self.SetTopWindow(frame)
+            self.Bind(EVT_DATASOURCE_CHANGED, self.OnDatasourceChanged)
             return True
 
-        def on_datasource_changed(self, page):
-            wx.MessageBox(
-                page.datasource.uri, 'Datasource changed', wx.OK)
+        def OnDatasourceChanged(self, event):
+            if event:
+                message = event.uri
+            else:
+                message = '<Datasource is set to None>'
+            wx.MessageBox(message, 'Datasource page changed', wx.OK)
+                
 
     app = App(0)
     app.MainLoop()

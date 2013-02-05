@@ -11,20 +11,26 @@ class Datasource(object):
 
     - Datasource has a state (current filepath, cursor in a database, etc.)
     - Datasource provides a URI of interest.
+
+    >>> d = Datasource()
+    >>> d.uri # yields None
+    >>> d.uri = 'file:///foo/bar/baz/'
+    >>> d.uri
+    'file:///foo/bar/baz/'
     
     """
-    def __init__(self, *args, **kwargs):
+    def __init__(self, uri=None):
         """Initializer.
         """
-
-    @property
-    def uri(self):
-        """Returns URI of the datasource. Subclass must override this.
-        """
-        return self.get_uri()
+        self._uri = uri
 
     def get_uri(self):
-        return NotImplemented
+        return self._uri
+
+    def set_uri(self, uri):
+        self._uri = uri
+
+    uri = property(get_uri, set_uri)
 
 
 if __name__=='__main__':

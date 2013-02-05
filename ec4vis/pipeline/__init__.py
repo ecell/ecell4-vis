@@ -11,8 +11,20 @@ except ImportError:
     import sys, os
     p = os.path.abspath(__file__); sys.path.insert(0, p[:p.rindex(os.sep+'ec4vis')])
 
-from ec4vis.logger import debug, info, logger, DEBUG
+from ec4vis.logger import debug, info, log_call, logger, DEBUG
 
+
+# pipeline node registry
+PIPELINE_NODE_REGISTRY = {}
+
+@log_call
+def register_pipeline_node(node_class, name=None):
+    """Registers new pipeline node class to registry.
+    """
+    if bool(name)==False:
+        name = node_class.__name__
+    PIPELINE_NODE_REGISTRY[name] = node_class
+    debug('registered pipeline node %s as %s' %(name, node_class))
 
 
 class PipelineEvent(object):
@@ -160,7 +172,6 @@ class PipelineNode(object):
     ValueError: Parent item does not provide LatticeSpec
     
     """
-    INSTANCE_NAMES = []
     CLASS_NAME = None # subclass may override this
     
     def __init__(self, name=None):
@@ -173,17 +184,25 @@ class PipelineNode(object):
         self.children = []
         self.upward_event_handlers = {}
         self.downward_event_handlers = {}
+        self.observers = []
 
     def __repr__(self):
         """Retrurns in <class_name: instance_name> format.
         """
         return '<%s: %s>' %(self.class_name, self.name)
 
+    def finalize(self):
+        """Finalizer.
+        """
+        pass
+
     @property
     def class_name(self):
         """Returns human-friendly class name.
         """
         return self.CLASS_NAME or self.__class__.__name__
+
+    # spec-related interfaces
 
     def get_input_spec(self):
         """Returns input specification. Subclass may override this.
@@ -202,6 +221,8 @@ class PipelineNode(object):
     @property
     def output_spec(self):
         return self.get_output_spec()
+
+    # tree node management interfaces
 
     @property
     def is_root(self):
@@ -262,19 +283,17 @@ class PipelineNode(object):
         """
         return None
 
+    # event handling interfaces
+
     def handle_upward_event(self, pipeline_event):
         """Handles upstreaming pipeline event. Subclass may override.
         """
-        event_handlers = self.upward_event_handlers.get(pipeline_event.__class__, [])
-        for event_handler in event_handlers:
-            event_handler(self, pipeline_event)
+        pass # empty!
 
     def handle_downward_event(self, pipeline_event):
         """Handles downstreaming pipeline event. Subclass may override.
         """
-        event_handlers = self.downward_event_handlers.get(pipeline_event.__class__, [])
-        for event_handler in event_handlers:
-            event_handler(self, pipeline_event)
+        pass # empty!
 
     def propagate_up(self, pipeline_event):
         """Propagates event upward.
@@ -282,6 +301,10 @@ class PipelineNode(object):
         debug('%s propagating up %s' %(self.__class__.__name__, pipeline_event))
         if pipeline_event.note_visited(self):
             self.handle_upward_event(pipeline_event)
+            # call for extra event handlers
+            event_handlers = self.upward_event_handlers.get(pipeline_event.__class__, [])
+            for event_handler in event_handlers:
+                event_handler(self, pipeline_event)
         if self.parent:
             self.parent.propagate_up(pipeline_event)
 
@@ -291,9 +314,33 @@ class PipelineNode(object):
         debug('%s propagating down %s' %(self.__class__.__name__, pipeline_event))
         if pipeline_event.note_visited(self):
             self.handle_downward_event(pipeline_event)
+            # call for extra event handlers
+            event_handlers = self.downward_event_handlers.get(pipeline_event.__class__, [])
+            for event_handler in event_handlers:
+                event_handler(self, pipeline_event)
             for child in self.children:
                 child.propagate_down(pipeline_event)
-                
+
+    # observer interfaces
+
+    def add_observer(self, observer):
+        """Add an observer.
+        """
+        if observer not in self.observers:
+            self.observers.append(observer)
+
+    def remove_observer(self, observer):
+        """Remove inspector from the node.
+        """
+        if observer in self.observers:
+            self.observers.remove(observer)
+
+    def status_changed(self):
+        """Notifies status change (to inspectors).
+        """
+        for observer in self.observers:
+            observer.update()
+
 
 class RootPipelineNode(PipelineNode):
     """Special pipeline item intended to be a root of pipeline tree.
@@ -307,11 +354,11 @@ class RootPipelineNode(PipelineNode):
     ValueError: RootPipelineNode should always be root.
     
     """
-    def __init__(self, *args, **kwargs):
+    def __init__(self, name=None, datasource=None):
         """Initializer.
         """
-        PipelineNode.__init__(self, *args, **kwargs)
-        self._datasource = None
+        PipelineNode.__init__(self, name=name)
+        self._datasource = datasource
 
     def get_datasource(self):
         """Property getter for datasource
@@ -348,6 +395,10 @@ class RootPipelineNode(PipelineNode):
         """
         raise ValueError('%s should always be root.' %self.__class__.__name__)
 
+    def handle_downward_event(self, pipeline_event):
+        if isinstance(pipeline_event, UpdateEvent):
+            self.status_changed()
+
 
 class PipelineTree(object):
     """Represents a pipeline.
@@ -359,10 +410,11 @@ class PipelineTree(object):
     <RootPipelineNode: Root>
 
     """
-    def __init__(self):
+    def __init__(self, name='Pipeline', root_name='Root', datasource=None):
         """Initializer.
         """
-        self.root = RootPipelineNode(name='Root')
+        self.name = name
+        self.root = RootPipelineNode(name=root_name, datasource=datasource)
 
     def __repr__(self):
         """Returns representation.
@@ -370,6 +422,8 @@ class PipelineTree(object):
         return '<PipelineTree>'
 
     def propagate(self, pipeline_event):
+        """Propagate down event.
+        """
         self.root.propagate_down(pipeline_event)
 
 

@@ -1,19 +1,18 @@
 # coding: utf-8
 """ec4vis.browser -- Browser window in visualizer application
 """
-from logging import debug
 
 import wx
 import wx.aui
 
-# this stuff enables module-wise execution
+# this allows module-wise execution
 try:
     import ec4vis
 except ImportError:
     import sys, os
     p = os.path.abspath(__file__); sys.path.insert(0, p[:p.rindex(os.sep+'ec4vis')])
 
-from ec4vis.logger import debug, info, logger, DEBUG
+from ec4vis.logger import debug, info, logger, DEBUG, log_call
 from ec4vis.console.panel import ConsolePanel
 from ec4vis.datasource.panel import DatasourcePanel
 from ec4vis.inspector.panel import InspectorPanel
@@ -55,13 +54,18 @@ class BrowserFrame(wx.Frame):
     +-------------------------------------+
     
     """
+    @log_call
     def __init__(self, *args, **kwargs):
         """Initializer.
         """
-        debug('BrowserFrame::Initializing...')
+        # this should be before superclass initializer.
+        pipeline = kwargs.pop('pipeline')
+        debug('pipeline: %s' %pipeline)
         wx.Frame.__init__(self, *args, **kwargs)
+        datasource = pipeline.root.datasource
+        debug('datasource: %s' %datasource)
         # datasource panel
-        datasource_panel = DatasourcePanel(self, -1)
+        datasource_panel = DatasourcePanel(self, -1, datasource=datasource)
         # pipeline panel
         pipeline_panel = PipelinePanel(self, -1)
         # visualizer panel
@@ -75,27 +79,19 @@ class BrowserFrame(wx.Frame):
         # aui manager
         aui_manager = wx.aui.AuiManager()
         aui_manager.SetManagedWindow(self)
-        debug('BrowserFrame:: adding AUI panes...')
-        aui_manager.AddPane(pipeline_panel,
-                            pane_info('Pipeline')
-                            .BestSize((300, -1))
-                            .Left())
-        aui_manager.AddPane(datasource_panel,
-                            pane_info('Datasource')
-                            .Left())
-        aui_manager.AddPane(console_panel,
-                            pane_info('Console')
-                            .BestSize((-1, 100))
-                            .Bottom())
-        aui_manager.AddPane(visualizer_panel,
-                            pane_info('Visualizer')
-                            .Center())
-        aui_manager.AddPane(inspector_panel,
-                            pane_info('Inspector')
-                            .BestSize((300, -1))
-                            .Right())
+        for panel, name, bestsize, layout in [
+            (pipeline_panel, 'Pipeline', (300, -1), 'Left'),
+            (datasource_panel, 'Datasource', None, 'Left'),
+            (console_panel, 'Console', (-1, 100), 'Bottom'),
+            (visualizer_panel, 'Visualizer', None, 'Center'),
+            (inspector_panel, 'Inspector', (300, -1), 'Right')]:
+            pinfo = pane_info(name)
+            if bestsize:
+                pinfo = pinfo.BestSize(bestsize)
+            if layout:
+                pinfo = getattr(pinfo, layout)()
+            aui_manager.AddPane(panel, pinfo)
         aui_manager.Update()
-        debug('BrowserFrame:: aui_manager updated successfully.')
         # bindings
         self.menu_bar = menu_bar
         self.datasource_panel = datasource_panel
@@ -107,10 +103,10 @@ class BrowserFrame(wx.Frame):
         # event bindings
         self.Bind(wx.EVT_CLOSE, self.OnClose)
 
+    @log_call
     def finalize(self):
         """Finalizer.
         """
-        debug('BrowserFrame::finalize()')
         for subwidget in [self.menu_bar,
                           self.datasource_panel,
                           self.pipeline_panel,
@@ -121,12 +117,11 @@ class BrowserFrame(wx.Frame):
         self.aui_manager.UnInit()
         del self.aui_manager
         
+    @log_call
     def OnClose(self, evt):
         """Make sure to destroy aui_manager, otherwise it crashes.
         """
-        debug('BrowserFrame::OnClose()')
         self.finalize()
-        debug('Uninitialized aui_manager successfully.')
         self.Destroy()
 
 
@@ -135,6 +130,9 @@ if __name__=='__main__':
     this_filepath = os.path.abspath(__file__)
     ec4vis_parent = this_filepath[:this_filepath.rindex(os.sep+'ec4vis')]
     ec4vis_test_root = os.path.join(ec4vis_parent, 'tests', 'data', 'fs', 'root')
+
+    from ec4vis.datasource import Datasource
+    from ec4vis.pipeline import PipelineTree
     
     class App(wx.App):
         """Demonstrative application.
@@ -142,10 +140,9 @@ if __name__=='__main__':
         def OnInit(self):
             """Initializer.
             """
-            frame = BrowserFrame(None, -1, u'Browser Frame Demo', size=(1200, 800))
-            fs_page = frame.datasource_panel.notebook.find_page('Filesystem')
-            if fs_page:
-                fs_page.root_path = ec4vis_test_root
+            datasource = Datasource()
+            pipeline = PipelineTree(datasource=datasource)
+            frame = BrowserFrame(None, -1, u'Browser Frame Demo', size=(1200, 800), pipeline=pipeline)
             frame.Show(True)
             
             # frame.aui_manager.Upodate()
