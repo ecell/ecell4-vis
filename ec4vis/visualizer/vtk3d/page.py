@@ -22,6 +22,7 @@ class Vtk3dVisualizerPage(VisualizerPage):
     """Abstract superclass for pages in a visualizer notebook.
     """
     def __init__(self, *args, **kwargs):
+        settings = kwargs.pop('settings', None)
         VisualizerPage.__init__(self, *args, **kwargs)
         self._aspect_ratio = [4, 3]
         render_window = wxVTKRenderWindowInteractor(self, -1)
@@ -31,7 +32,6 @@ class Vtk3dVisualizerPage(VisualizerPage):
         # event bindings
         self.Bind(wx.EVT_SIZE, self.OnSize)
         self.setup_renderer()
-        settings = kwargs.get('settings', None)
         if settings:
             self.configure_renderer(settings)
 
@@ -113,6 +113,18 @@ class Vtk3dVisualizerPage(VisualizerPage):
         """Resize handler.
         """
         self.force_aspect_ratio(*event.GetSize())
+
+    @log_call
+    def render(self):
+        """Do real rendering action.
+        """
+        self.render_window.Render()
+
+    @log_call
+    def update(self):
+        """Updates content of the rendering window.
+        """
+        self.render()
         
         
 if __name__=='__main__':

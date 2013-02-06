@@ -22,7 +22,7 @@ def register_inspector_page(node_class_name, page_class):
     """
     INSPECTOR_PAGE_REGISTRY[node_class_name] = page_class
     debug('registered inspector %s for pipeline node type %s' %(page_class, node_class_name))
-    
+
 
 class InspectorPage(ObserverPage):
     """Abstract superclass for pages in a inspector notebook.
@@ -32,6 +32,9 @@ class InspectorPage(ObserverPage):
         """
         # this should be before superclass initializer.
         ObserverPage.__init__(self, *args, **kwargs)
+
+# load built-in inspectors
+import ec4vis.inspector.datasource
 
 
 if __name__=='__main__':

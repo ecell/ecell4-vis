@@ -16,14 +16,13 @@ from ec4vis.utils.wx_.observer_page import ObserverPage
 # visualizer page registry
 VISUALIZER_PAGE_REGISTRY = {}
 
+
 @log_call
-def register_visualizer_page(page_class, name=None):
+def register_visualizer_page(node_class_name, page_class):
     """Registers new page class to registry.
     """
-    if bool(name)==False:
-        name = page_class.__name__
-    VISUALIZER_PAGE_REGISTRY[name] = page_class
-    debug('registered visualizer %s as %s' %(name, page_class))
+    VISUALIZER_PAGE_REGISTRY[node_class_name] = page_class
+    debug('registered visualizer %s for pipeline node type %s' %(page_class, node_class_name))
 
 
 class VisualizerPage(ObserverPage):
@@ -31,6 +30,11 @@ class VisualizerPage(ObserverPage):
     """
     def __init__(self, *args, **kwargs):
         ObserverPage.__init__(self, *args, **kwargs)
+
+
+# load built-in visualizer page classes
+import ec4vis.visualizer.vtk3d.page
+
 
 
 if __name__=='__main__':

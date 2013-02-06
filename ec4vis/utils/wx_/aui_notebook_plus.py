@@ -102,6 +102,10 @@ class AuiNotebookPlus(wx.aui.AuiNotebook):
 class AuiNotebookPlusWithTargetBindingPage(AuiNotebookPlus):
     """AuiNotebookPlus for target-binding pages
     """
+    def __init__(self, *args, **kwargs):
+        AuiNotebookPlus.__init__(self, *args, **kwargs)
+        self.Bind(wx.aui.EVT_AUINOTEBOOK_PAGE_CLOSE, self.OnPageClose)
+    
     @log_call
     def find_page_for_target(self, target):
         """Finds page which binds given target
@@ -126,8 +130,16 @@ class AuiNotebookPlusWithTargetBindingPage(AuiNotebookPlus):
             return
         else:
             if target:
-                target.remove_observer(page_instance)
+                target.remove_observer(page_instance_to_delete)
             self.destroy_page(page_index_to_delete)
+
+    @log_call
+    def OnPageClose(self, event):
+        """On page close, the page should be removed from the observers list.
+        """
+        page_index = event.GetSelection()
+        if not (page_index is wx.NOT_FOUND):
+            self.GetPage(page_index).finalize()
 
 
 if __name__=='__main__':

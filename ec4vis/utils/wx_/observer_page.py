@@ -22,7 +22,8 @@ class ObserverPage(wx.Panel, Observer):
         """
         # this should be before superclass initializer.
         target = kwargs.pop('target')
-        Observer.__init__(self, target)
+        self._sizer = None # this should be before parent's __init__
+        Observer.__init__(self, target) # this will bind self.target
         wx.Panel.__init__(self, *args, **kwargs)
 
     @property

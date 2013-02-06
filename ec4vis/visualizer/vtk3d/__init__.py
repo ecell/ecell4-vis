@@ -27,15 +27,6 @@ class Vtk3dVisualizerNode(VisualizerNode):
         """Initializer.
         """
         VisualizerNode.__init__(self, *args, **kwargs)
-        self.render_window = None
-
-    @log_call
-    def set_render_window(self, render_window):
-        """Set render window object.
-        """
-        debug('Vtk3dVisualizer::set_render_window() object at %s'
-              %id(render_window))
-        self.render_window = render_window
 
 
 if __name__=='__main__':

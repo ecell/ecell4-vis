@@ -10,8 +10,8 @@ except ImportError:
     import sys, os
     p = os.path.abspath(__file__); sys.path.insert(0, p[:p.rindex(os.sep+'ec4vis')])
 
-from ec4vis.logger import debug
-from ec4vis.inspector.page import InspectorPage
+from ec4vis.logger import debug, log_call
+from ec4vis.inspector.page import InspectorPage, register_inspector_page
 
 
 class DatasourceInspectorPage(InspectorPage):
@@ -27,18 +27,24 @@ class DatasourceInspectorPage(InspectorPage):
         h_sizer = wx.BoxSizer(wx.HORIZONTAL)
         h_sizer.Add(label, 0, wx.EXPAND|wx.ALL, 0)
         h_sizer.Add(text, 1, wx.EXPAND|wx.ALL, 0)
+        # self.sizer comes from parent.
         self.sizer.Add(h_sizer, 0, wx.EXPAND|wx.ALL, 10)
 
+    @log_call
     def update(self):
         """Update UI.
         """
-        if self.target is None:
-            self.uri_text.SetValue('')
-        else:
+        if (self.target and hasattr(self.target, 'datasource')
+            and self.target.datasource.uri):
             self.uri_text.SetValue(self.target.datasource.uri)
+        else:
+            self.uri_text.SetValue('')
         
+
+register_inspector_page('RootPipelineNode', DatasourceInspectorPage)
     
 
 if __name__=='__main__':
     # TBD
     pass
+

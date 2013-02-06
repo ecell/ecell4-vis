@@ -269,6 +269,24 @@ class PipelineNode(object):
         """
         return self.parent is None
 
+    @property
+    def ancestors(self):
+        """Returns list of all ancestors, including self.
+        """
+        ret = [self]
+        if self.parent:
+            ret.extend(self.parent.ancestors)
+        return ret
+
+    @property
+    def descendants(self):
+        """Returns list of all descendants, including self.
+        """
+        ret = [self]
+        for child in self.children:
+            ret.extend(child.descendants)
+        return ret
+
     def bind_child(self, child):
         """Bind child as a member of children.
         """
@@ -367,12 +385,14 @@ class PipelineNode(object):
         """
         if observer not in self.observers:
             self.observers.append(observer)
+            debug('>>>>> ADD: observers are now %s' %self.observers)
 
     def remove_observer(self, observer):
         """Remove inspector from the node.
         """
         if observer in self.observers:
             self.observers.remove(observer)
+            debug('>>>>> REMOVE: observers are now %s' %self.observers)
 
     def internal_update(self):
         """Update internal status.

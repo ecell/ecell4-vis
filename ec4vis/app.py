@@ -114,6 +114,7 @@ class BrowserApp(wx.App):
         add_node_menu_id = pipeline_tree_menu.add_node_menu_id
         delete_node_menu_id = pipeline_tree_menu.delete_node_menu_id
         show_inspector_menu_id = pipeline_tree_menu.show_inspector_menu_id
+        show_visualizer_menu_id = pipeline_tree_menu.show_visualizer_menu_id
         # bind pipeline
         pipeline_tree_ctrl.pipeline = self.pipeline
         # event bindings
@@ -122,10 +123,13 @@ class BrowserApp(wx.App):
         pipeline_tree_ctrl.Bind(wx.EVT_MENU, self.OnPipelineAddNodeMenu, add_node_menu_id)
         pipeline_tree_ctrl.Bind(wx.EVT_MENU, self.OnPipelineDeleteNodeMenu, delete_node_menu_id)
         pipeline_tree_ctrl.Bind(wx.EVT_MENU, self.OnPipelineShowInspectorMenu, show_inspector_menu_id)
+        pipeline_tree_ctrl.Bind(wx.EVT_MENU, self.OnPipelineShowVisualizerMenu, show_visualizer_menu_id)
         # outlet bindings
         self.pipeline_panel = pipeline_panel
         self.pipeline_tree_ctrl = pipeline_tree_ctrl
         self.pipeline_tree_menu = pipeline_tree_menu
+        # make sure that root node is selected.
+        pipeline_tree_ctrl.Unselect()
 
     @log_call
     def init_datasource_panel(self):
@@ -264,7 +268,7 @@ class BrowserApp(wx.App):
         dlg.Destroy()
 
     @log_call
-    def check_parent_node_selected(self):
+    def check_pipeline_node_selected(self):
         """Show alert if no pipeline node is selected, returning True. Otherwise False.
         """
         selected_tree_item_id, selected_node = self.current_pipeline_node_info
@@ -278,7 +282,7 @@ class BrowserApp(wx.App):
         """Called on 'Pipeline'->'Add Node...' menu.
         """
         # If current pipeline node is set to None, do nothing and return.
-        parent_tree_item_id, parent_node = self.check_parent_node_selected()
+        parent_tree_item_id, parent_node = self.check_pipeline_node_selected()
         if parent_node is None:
             return
         # else --
@@ -302,11 +306,6 @@ class BrowserApp(wx.App):
             # rebuild tree
             self.pipeline_tree_ctrl.rebuild_tree(parent_tree_item_id)
             self.pipeline_tree_ctrl.Expand(parent_tree_item_id)
-            # look for visualizer
-            visualizer_page_class = VISUALIZER_PAGE_REGISTRY.get(node_class, None)
-            if visualizer_page_class:
-                debug("found visualizer page class: %s", visualizer_page_class)
-                self.visualizer_panel.notebook.create_page(visualizer_page_class, label_name)
         dlg.Destroy()
 
     @log_call
@@ -314,7 +313,7 @@ class BrowserApp(wx.App):
         """Called on 'Pipeline'->'Delete Node...' menu.
         """
         # If current pipeline node is set to None, do nothing and return.
-        selected_tree_item_id, selected_node = self.check_parent_node_selected()
+        selected_tree_item_id, selected_node = self.check_pipeline_node_selected()
         if selected_node is None:
             return
         elif selected_tree_item_id==self.pipeline_tree_ctrl.GetRootItem():
@@ -328,6 +327,7 @@ class BrowserApp(wx.App):
         # phase 1: collect target data
         targets_to_be_destroyed = self.pipeline_tree_ctrl.get_subtree_data(selected_tree_item_id)
         # phase 2: destroy inspectors/visualizers bound to those targets
+        debug('Destroying targets: %s' %targets_to_be_destroyed)
         for target in targets_to_be_destroyed:
             self.inspector_notebook.destroy_page_for_target(target)
             self.visualizer_notebook.destroy_page_for_target(target)
@@ -343,7 +343,7 @@ class BrowserApp(wx.App):
         """Called on 'Pipeline'->'Show Inspector...' menu.
         """
         # If current pipeline node is set to None, do nothing and return.
-        selected_tree_id, selected_node = self.check_parent_node_selected()
+        selected_tree_id, selected_node = self.check_pipeline_node_selected()
         if selected_node is None:
             return
         # else -- 
@@ -364,8 +364,40 @@ class BrowserApp(wx.App):
             # else
             inspector_page_index, inspector_page_instance = self.inspector_notebook.create_page(
                 inspector_page_class, selected_node.name, target=selected_node)
+            # force update
             inspector_page_instance.update()
         self.inspector_notebook.SetSelection(inspector_page_index)
+
+    @log_call
+    def OnPipelineShowVisualizerMenu(self, event):
+        """Called on 'Pipeline'->'Show visualizer...' menu.
+        """
+        # TBD: this is almost same with OnPipelineShowInspectorMenu.
+        # If current pipeline node is set to None, do nothing and return.
+        selected_tree_id, selected_node = self.check_pipeline_node_selected()
+        if selected_node is None:
+            return
+        # else -- 
+        debug('current_pipeline_node is %s' %selected_node)
+        # If there are already corresponding visualizer, just focus it.
+        visualizer_page_index, visualizer_page_instance = self.visualizer_notebook.find_page_for_target(selected_node)
+        if visualizer_page_index is None:
+            debug('No page exists, trying')
+            # find PipelineNode class and (try to) load new visualizer page.
+            pipeline_node_type_name = selected_node.__class__.__name__
+            debug('\n'.join(str((k, v)) for k, v in VISUALIZER_PAGE_REGISTRY.items()))
+            visualizer_page_class = VISUALIZER_PAGE_REGISTRY.get(pipeline_node_type_name, None)
+            if visualizer_page_class is None:
+                wx.MessageBox('Node type %s does not have inspector.' %(pipeline_node_type_name),
+                              'Invalid operation.')
+                return
+            debug('inspector page class: %s' %(visualizer_page_class))
+            # else
+            visualizer_page_index, visualizer_page_instance = self.visualizer_notebook.create_page(
+                visualizer_page_class, selected_node.name, target=selected_node)
+            # force update
+            visualizer_page_instance.update()
+        self.visualizer_notebook.SetSelection(visualizer_page_index)
 
     @log_call
     def OnAppAboutMenu(self, event):
@@ -396,9 +428,15 @@ class BrowserApp(wx.App):
     def OnPipelineTreeSelChanged(self, event):
         """Called on selection change on pipeline tree item.
         """
-        # find selected item.
-        # update collesponding inspector.
-        # load tree item submenu.
+        # If current pipeline node is set to None, do nothing and return.
+        selected_tree_item_id, selected_node = self.check_pipeline_node_selected()
+        if selected_node is None:
+            return
+        node_type_name = selected_node.__class__.__name__
+        self.pipeline_tree_ctrl.tree_menu.enable_show_inspector(
+            node_type_name in INSPECTOR_PAGE_REGISTRY.keys())
+        self.pipeline_tree_ctrl.tree_menu.enable_show_visualizer(
+            node_type_name in VISUALIZER_PAGE_REGISTRY.keys())
 
     @log_call
     def OnPipelineTreeItemMenu(self, event):

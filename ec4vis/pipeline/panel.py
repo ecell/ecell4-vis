@@ -25,9 +25,21 @@ class PipelineTreeItemMenu(wx.Menu):
         add_node_menu_id = self.Append(-1, "Add...")
         delete_node_menu_id = self.Append(-1, "Delete")
         show_inspector_menu_id = self.Append(-1, "Show Inspector")
+        show_visualizer_menu_id = self.Append(-1, "Show Visualizer")
         self.add_node_menu_id = add_node_menu_id
         self.delete_node_menu_id = delete_node_menu_id
         self.show_inspector_menu_id = show_inspector_menu_id
+        self.show_visualizer_menu_id = show_visualizer_menu_id
+
+    def enable_show_inspector(self, enabled):
+        """Enable/disables 'Show Inspector' menu.
+        """
+        self.Enable(self.show_inspector_menu_id.GetId(), enabled)
+                
+    def enable_show_visualizer(self, enabled):
+        """Enable/disables 'Show Visualizer' menu.
+        """
+        self.Enable(self.show_visualizer_menu_id.GetId(), enabled)
         
 
 class PipelineTreeCtrl(TreeCtrlPlus):
@@ -48,15 +60,8 @@ class PipelineTreeCtrl(TreeCtrlPlus):
     def get_subtree_data(self, tree_item_id):
         """Recursively collects target data from subtree of given tree_item_id.
         """
-        if self.GetChildrenCount(tree_item_id):
-            subdata = []
-            child_item_id, cookie = self.GetFirstChild(tree_item_id)
-            while child_item_id.IsOk():
-                subdata.extend(self.get_subtree_data(child_item_id))
-                child_item_id, cookie = self.GetNextChild(tree_item_id, cookie)
-            return subdata
-        else:
-            return [self.GetPyData(tree_item_id)]
+        current_node = self.GetPyData(tree_item_id)
+        return current_node.descendants
 
     def set_pipeline(self, pipeline):
         """Bind model to the tree.

@@ -18,7 +18,7 @@ class VisualizerNotebook(AuiNotebookPlusWithTargetBindingPage):
     """Notebook in a visualizer panel.
     """
     def __init__(self, *args, **kwargs):
-        style = wx.aui.AUI_NB_TOP|wx.aui.AUI_NB_TAB_MOVE
+        style = wx.aui.AUI_NB_TOP|wx.aui.AUI_NB_TAB_MOVE|wx.aui.AUI_NB_CLOSE_BUTTON
         style |= kwargs.pop('style', 0)
         kwargs['style'] = style
         AuiNotebookPlusWithTargetBindingPage.__init__(self, *args, **kwargs)
