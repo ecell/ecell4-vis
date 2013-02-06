@@ -10,14 +10,17 @@ except ImportError:
     import sys, os
     p = os.path.abspath(__file__); sys.path.insert(0, p[:p.rindex(os.sep+'ec4vis')])
 
-from ec4vis.logger import debug, log_call
+# from ec4vis.logger import debug, log_call
+# from ec4vis.pipeline import * # <- you may simply do this to import pipeline stuff
 from ec4vis.pipeline import PipelineNode, PipelineSpec, UriSpec, register_pipeline_node
 
 
+# First, define DataSpec for downstreams.
 class ParticleDataSpec(PipelineSpec):
     pass
 
 
+# Second, define node.
 class SimpleParticleLoaderNode(PipelineNode):
     INPUT_SPEC = [UriSpec]
     OUTPUT_SPEC = [ParticleDataSpec]
@@ -53,10 +56,12 @@ class SimpleParticleLoaderNode(PipelineNode):
         if spec is ParticleDataSpec:
             return self.particle_data # this may be None if datasource is not valid.
         return None
-            
+
+# Finally, register node to registry.
 register_pipeline_node(SimpleParticleLoaderNode)
 
 
+# You may write doctests, which runs on executing this module.
 if __name__=='__main__':
     # TBD
     from doctest import testmod, ELLIPSIS
