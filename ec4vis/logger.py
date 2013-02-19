@@ -22,9 +22,9 @@ def log_call(func):
     func_id = '.'.join(bits)
     @wraps(func)
     def wrapped(*args, **kwargs):
-        debug('Entering '+func_id)
+        log(DEBUG-1, 'Entering '+func_id)
         ret = func(*args, **kwargs)
-        debug('Exited '+func_id)
+        log(DEBUG-1, 'Exited '+func_id)
         return ret
     return wrapped
 
