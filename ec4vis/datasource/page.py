@@ -57,6 +57,16 @@ class DatasourcePage(wx.Panel):
         """
         wx.PostEvent(self, DatasourceChangedEvent())
 
+    def save(self):
+        """Save states. Subclass may override.
+        """
+        return None
+
+    def restore(self, info):
+        """Restore states. Subclass may override.
+        """
+        return
+
 
 if __name__=='__main__':
     # TBD

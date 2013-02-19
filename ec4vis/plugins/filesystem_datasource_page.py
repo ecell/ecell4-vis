@@ -274,7 +274,21 @@ class FilesystemDatasourcePage(DatasourcePage):
         if not (old_uri==self.datasource.uri):
             # trigger DatasourceChangeEvent
             self.datasource_changed()
-            
+
+    def save(self):
+        """Saves state.
+        """
+        return dict(root_path=self.root_path)
+
+    def restore(self, info):
+        """Restores state.
+        """
+        if isinstance(info, dict):
+            root_path = info.get('root_path', None)
+            if bool(root_path) and os.path.exists(root_path):
+                self.root_path = root_path
+
+    
 # register FilesystemDatasourcePage to datasource page registry
 register_datasource_page(FilesystemDatasourcePage)
 

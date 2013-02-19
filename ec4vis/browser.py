@@ -121,6 +121,10 @@ class BrowserFrame(wx.Frame):
     def OnClose(self, evt):
         """Make sure to destroy aui_manager, otherwise it crashes.
         """
+        app = wx.GetApp()
+        closing_hook = getattr(app, 'OnBrowserClosing')
+        if closing_hook:
+            closing_hook(evt)
         self.finalize()
         self.Destroy()
 

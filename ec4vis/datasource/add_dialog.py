@@ -10,6 +10,7 @@ except ImportError:
 
 from ec4vis.logger import debug, info, logger, DEBUG
 
+DEFAULT_DATASOURCE_NAME = 'MyDatasource'
 
 class AddDatasourceDialog(wx.Dialog):
     """Dialog used for 'Add Datasource' operation.
@@ -26,7 +27,7 @@ class AddDatasourceDialog(wx.Dialog):
         type_listbox = wx.ListBox(self, -1, style=wx.LB_SINGLE|wx.LB_SORT|wx.SUNKEN_BORDER, choices=ds_choices)
         # 'Name:' text entry
         name_label = wx.StaticText(self, -1, label='Name: ')
-        name_text = wx.TextCtrl(self, -1, 'MyDatasource')
+        name_text = wx.TextCtrl(self, -1, DEFAULT_DATASOURCE_NAME)
         # sizer for text entry
         text_sizer = wx.BoxSizer(wx.HORIZONTAL)
         text_sizer.Add(name_label, 0, wx.ALL|wx.EXPAND, 0)
@@ -66,14 +67,15 @@ class AddDatasourceDialog(wx.Dialog):
         """
         if self.datasource_name is None:
             return
-        self.name_text.SetValue(self.datasource_name)
+        if self.name_text.GetValue() == DEFAULT_DATASOURCE_NAME:
+            self.name_text.SetValue(self.datasource_name)
         self.ok_button.Enable()
         
     def OnNameText(self, evt):
         """If value of the name text is zero, disable OK button.
         """
         text = self.name_text.GetValue()
-        self.ok_button.Enable(bool(len(text)))
+        self.ok_button.Enable(bool(self.datasource_name) and bool(len(text)))
 
     @property
     def label_name(self):

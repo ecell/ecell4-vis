@@ -3,7 +3,7 @@
 """
 
 class Datasource(object):
-    """Abstract superclass for datasources.
+    """Datasources.
 
     Datasource bridges between visualizer and underlying data resource,
     such as files in a filesystem, records in a RDBMS table, live stream

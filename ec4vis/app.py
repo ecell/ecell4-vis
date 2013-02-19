@@ -1,7 +1,7 @@
 # coding: utf-8
 """ec4vis.app -- Visualizer Application.
 """
-from os import getcwd
+from os import getcwd, getenv
 
 import wx
 
@@ -23,6 +23,7 @@ from ec4vis.inspector.datasource.page import DatasourceInspectorPage
 from ec4vis.pipeline import PipelineTree, UpdateEvent, PIPELINE_NODE_REGISTRY
 from ec4vis.pipeline.add_dialog import AddPipelineNodeDialog
 from ec4vis.plugins import PluginLoader
+from ec4vis.registry import Registry
 from ec4vis.visualizer.page import VISUALIZER_PAGE_REGISTRY
 from ec4vis.version import VERSION
 
@@ -38,7 +39,7 @@ class BrowserApp(wx.App):
     def __init__(self, *args, **kwargs):
         
         # application status
-        self.settings = kwargs.pop('settings', None)
+        self.registry = Registry(kwargs.pop('registry_home', None), create=True)
         # create datasource
         self.datasource = Datasource()
         # create pipeline
@@ -56,6 +57,7 @@ class BrowserApp(wx.App):
         # initialize plugins
         info('Loading plugins...')
         self.init_plugins()
+        self.post_init_setup()
         return True
 
     @log_call
@@ -184,12 +186,26 @@ class BrowserApp(wx.App):
         self.menu_bar = menu_bar
 
     @log_call
+    def post_init_setup(self):
+        """The last phase of initialization.
+        """
+        # load datasources
+        ds_registry = self.registry.load_section('datasources')
+        for label_name, ds_name, ds_info in ds_registry.get('pages', []):
+            page_class = DATASOURCE_PAGE_REGISTRY.get(ds_name, None)
+            if page_class is None:
+                wx.MessageBox('Page Type not found: %s' %ds_name, 'Error')
+            idx, page = self.datasource_panel.notebook.create_page(page_class, label_name)
+            page.restore(ds_info)
+
+    @log_call
     def finalize(self):
         """Finalizer.
         """
-        # just a placeholder atm.
         # finalize visualizers
         debug('finalized %s' %(self.__class__.__name__))
+        # close registry
+        self.registry.close()
 
     # In-app convenient properties
 
@@ -242,6 +258,24 @@ class BrowserApp(wx.App):
         if self.current_inspector_page:
             return self.current_inspector_page.inspector
         return None
+
+    @log_call
+    def OnBrowserClosing(self, event):
+        """Hook from browser on closing.
+        """
+        # finalize datasource panel.
+        ds_registry = self.registry.load_section('datasources')
+        ds_notebook = self.datasource_panel.notebook
+        ds_pages_info = []
+        for page_index in range(ds_notebook.GetPageCount()):
+            page = ds_notebook.GetPage(page_index)
+            label = ds_notebook.GetPageText(page_index)
+            for name, cls in DATASOURCE_PAGE_REGISTRY.items():
+                if cls==page.__class__:
+                    ds_pages_info.append((label, name, page.save()))
+            debug('saving page %s' % [label, name, page.save()])
+        ds_registry['pages'] = ds_pages_info
+        # self.registry.sync()
 
     @log_call
     def OnDatasourceRemoveMenu(self, event):

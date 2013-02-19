@@ -217,7 +217,7 @@ class PipelineNode(object):
     def __repr__(self):
         """Retrurns in <class_name: instance_name> format.
         """
-        return '<%s: %s>' %(self.class_name, self.name)
+        return '<%s: %r>' %(self.class_name, self.name)
 
     def finalize(self):
         """Finalizer.
@@ -335,7 +335,7 @@ class PipelineNode(object):
         if self.parent:
             self.parent.unbind_child(self) # implicitly delete self.parent
 
-    def request_data(self, spec):
+    def request_data(self, spec, **params):
         """Request parent for given spec data.
         """
         return None
