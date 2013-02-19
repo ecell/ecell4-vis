@@ -48,7 +48,7 @@ class PipelineTreeCtrl(TreeCtrlPlus):
     def __init__(self, *args, **kwargs):
         """Initializer.
         """
-        style = kwargs.pop('style', 0)|wx.TR_NO_BUTTONS
+        style = kwargs.pop('style', 0)|wx.TR_NO_BUTTONS|wx.TR_HAS_BUTTONS
         kwargs['style'] = style
         wx.TreeCtrl.__init__(self, *args, **kwargs)
         # tree item menu
