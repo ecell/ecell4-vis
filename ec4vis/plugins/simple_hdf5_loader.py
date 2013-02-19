@@ -77,10 +77,11 @@ class SimpleHdf5LoaderNode(PipelineNode):
         return self._hdf5_data
 
     @log_call
-    def request_data(self, spec):
+    def request_data(self, spec, **kwargs):
         """Provides particle data.
         """
         if spec is Hdf5FileSpec:
+            data = self.hdf5_data
             return self.hdf5_data # this may be None if datasource is not valid.
         return None
             
