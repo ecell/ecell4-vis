@@ -197,6 +197,13 @@ class BrowserApp(wx.App):
                 wx.MessageBox('Page Type not found: %s' %ds_name, 'Error')
             idx, page = self.datasource_panel.notebook.create_page(page_class, label_name)
             page.restore(ds_info)
+        # load pipeline
+        pl_registry = self.registry.load_section('pipeline')
+        tree_info = pl_registry.get('tree', None)
+        if tree_info:
+            self.pipeline.restore(tree_info)
+            self.pipeline_tree_ctrl.rebuild_root()
+            self.pipeline_tree_ctrl.ExpandAll()
 
     @log_call
     def finalize(self):
@@ -263,7 +270,7 @@ class BrowserApp(wx.App):
     def OnBrowserClosing(self, event):
         """Hook from browser on closing.
         """
-        # finalize datasource panel.
+        # save datasource panel.
         ds_registry = self.registry.load_section('datasources')
         ds_notebook = self.datasource_panel.notebook
         ds_pages_info = []
@@ -275,8 +282,14 @@ class BrowserApp(wx.App):
                     ds_pages_info.append((label, name, page.save()))
             debug('saving page %s' % [label, name, page.save()])
         ds_registry['pages'] = ds_pages_info
+
+        # save pipeline
+        pl_registry = self.registry.load_section('pipeline')
+        pl_registry['tree'] = self.pipeline.save()
+
         # self.registry.sync()
 
+            
     @log_call
     def OnDatasourceRemoveMenu(self, event):
         """Called on 'Datasource' -> 'Remove' menu.

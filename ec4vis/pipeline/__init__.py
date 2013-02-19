@@ -130,7 +130,7 @@ class PipelineNode(object):
     >>> node.name
     'pipelinenode'
     >>> node
-    <PipelineNode: pipelinenode>
+    <PipelineNode: 'pipelinenode'>
 
     # filliality logics
     >>> grandparent = PipelineNode(name='grandmom')
@@ -142,9 +142,9 @@ class PipelineNode(object):
     >>> [node.is_root for node in (grandparent, parent, child)]
     [True, False, True]
     >>> parent.parent
-    <PipelineNode: grandmom>
+    <PipelineNode: 'grandmom'>
     >>> grandparent.children
-    [<PipelineNode: mom>]
+    [<PipelineNode: 'mom'>]
     >>> grandparent.connect(parent) # this should fail
     Traceback (most recent call last):
     ...
@@ -157,20 +157,20 @@ class PipelineNode(object):
     ...
     ValueError: Cyclic filliation detected.
     >>> grandparent.parent, grandparent.children 
-    (None, [<PipelineNode: mom>])
+    (None, [<PipelineNode: 'mom'>])
     >>> parent.parent, parent.children 
-    (<PipelineNode: grandmom>, [<PipelineNode: boy>])
+    (<PipelineNode: 'grandmom'>, [<PipelineNode: 'boy'>])
     >>> child.parent, child.children 
-    (<PipelineNode: mom>, [])
+    (<PipelineNode: 'mom'>, [])
     >>> child.connect(grandparent) # switches parent from mom to grandmom
     >>> [node.is_root for node in (grandparent, parent, child)]
     [True, False, False]
     >>> grandparent.parent, grandparent.children 
-    (None, [<PipelineNode: mom>, <PipelineNode: boy>])
+    (None, [<PipelineNode: 'mom'>, <PipelineNode: 'boy'>])
     >>> parent.parent, parent.children 
-    (<PipelineNode: grandmom>, [])
+    (<PipelineNode: 'grandmom'>, [])
     >>> child.parent, child.children 
-    (<PipelineNode: grandmom>, [])
+    (<PipelineNode: 'grandmom'>, [])
 
     # pipeline specs
     >>> root = RootPipelineNode()
@@ -407,7 +407,88 @@ class PipelineNode(object):
         for observer in self.observers:
             observer.update()
 
+    @log_call
+    def save(self):
+        """Saves state.
+        """
+        return None
 
+    @log_call
+    def restore(self, info):
+        """Restores state.
+        """
+        return
+
+    def save_recursively(self):
+        """Recursively saves state.
+
+        >>> class BusyPipelineNode(PipelineNode):
+        ...     def __init__(self, name=None):
+        ...         PipelineNode.__init__(self, name)
+        ...         self.foo = 'abcd'
+        ...     def save(self):
+        ...         return dict(foo=self.foo)
+        ...     def restore(self, info):
+        ...         if isinstance(info, dict):
+        ...             self.foo = info.get('foo', None)
+        ...
+        >>> BPN = BusyPipelineNode
+        >>> register_pipeline_node(BPN)
+        >>> grandad = BPN('grandad')
+        >>> dad = BPN('dad')
+        >>> boy1 = BPN('boy1')
+        >>> boy2 = BPN('boy2')
+        >>> boy3 = BPN('boy3')
+        >>> dad.connect(grandad)
+        >>> boy1.connect(dad)
+        >>> boy2.connect(dad)
+        >>> boy3.connect(dad)
+        >>> tree = PipelineTree('woo')
+        >>> grandad.connect(tree.root)
+        >>> saved = tree.save()
+        >>> saved
+        ['woo', [None, [['grandad', 'BusyPipelineNode', ... [{'foo': 'abcd'}, []]]]]]]]]]]]
+        >>> to_restore = PipelineTree()
+        >>> to_restore.restore(saved)
+        >>> print_pipeline(tree)
+        <PipelineTree>
+          <RootPipelineNode: 'Root'>
+            <BusyPipelineNode: 'grandad'>
+              <BusyPipelineNode: 'dad'>
+                <BusyPipelineNode: 'boy1'>
+                <BusyPipelineNode: 'boy2'>
+                <BusyPipelineNode: 'boy3'>
+        >>> print_pipeline(to_restore)
+        <PipelineTree>
+          <RootPipelineNode: 'Root'>
+            <BusyPipelineNode: 'grandad'>
+              <BusyPipelineNode: 'dad'>
+                <BusyPipelineNode: 'boy1'>
+                <BusyPipelineNode: 'boy2'>
+                <BusyPipelineNode: 'boy3'>
+        """
+        node_info = self.save()
+        children_info = []
+        for child in self.children:
+            child.__class__
+            for reg_name, cls in PIPELINE_NODE_REGISTRY.items():
+                if cls==child.__class__:
+                    children_info.append([child.name, reg_name, child.save_recursively()])
+        return [node_info, children_info]
+
+    def restore_recursively(self, info):
+        """Recursively restores state. #UNTESTED
+        """
+        node_info, children_info = info
+        self.restore(node_info)
+        for name, reg_name, ch_info in children_info:
+            node_class = PIPELINE_NODE_REGISTRY.get(reg_name, None)
+            if node_class:
+                child_node = node_class(name=name)
+                child_node.restore_recursively(ch_info)
+                child_node.connect(self)
+                
+            
 class RootPipelineNode(PipelineNode):
     """Special pipeline item intended to be a root of pipeline tree.
 
@@ -475,7 +556,7 @@ class PipelineTree(object):
     >>> p
     <PipelineTree>
     >>> p.root
-    <RootPipelineNode: Root>
+    <RootPipelineNode: 'Root'>
 
     """
     def __init__(self, name='Pipeline', root_name='Root', datasource=None):
@@ -494,6 +575,18 @@ class PipelineTree(object):
         """
         self.root.propagate_down(pipeline_event)
 
+    def save(self):
+        """Save tree.
+        """
+        return [self.name, self.root.save_recursively()]
+
+    def restore(self, info):
+        """Restore tree.
+        """
+        name, root_info = info
+        self.name = name
+        self.root.restore_recursively(root_info)
+
 
 def print_pipeline_item_tree(pipeline_item, prefix, indent):
     """Utility for printing (a part of) pipeline item tree.
@@ -506,10 +599,10 @@ def print_pipeline_item_tree(pipeline_item, prefix, indent):
     >>> baz.connect(bar)
     >>> qux.connect(foo)
     >>> print_pipeline_item_tree(foo, '', '  ')
-    <PipelineNode: Foo>
-      <PipelineNode: Bar>
-        <PipelineNode: Baz>
-      <PipelineNode: Qux>
+    <PipelineNode: 'Foo'>
+      <PipelineNode: 'Bar'>
+        <PipelineNode: 'Baz'>
+      <PipelineNode: 'Qux'>
 
     """
     print(prefix+str(pipeline_item))
@@ -533,12 +626,12 @@ def print_pipeline(pipeline, prefix='', indent='  '):
     >>> quux.connect(tree.root)
     >>> print_pipeline(tree)
     <PipelineTree>
-      <RootPipelineNode: Root>
-        <PipelineNode: Foo>
-          <PipelineNode: Bar>
-            <PipelineNode: Baz>
-          <PipelineNode: Qux>
-        <PipelineNode: Quux>
+      <RootPipelineNode: 'Root'>
+        <PipelineNode: 'Foo'>
+          <PipelineNode: 'Bar'>
+            <PipelineNode: 'Baz'>
+          <PipelineNode: 'Qux'>
+        <PipelineNode: 'Quux'>
     
     """
     print(prefix+str(pipeline))
