@@ -114,17 +114,22 @@ class SimpleHdf5TreeVisualizer(VisualizerPage):
     """Simple HDF5 tree visualizer.
     """
     def __init__(self, *args, **kwargs):
+        """Initializer.
+        """
         VisualizerPage.__init__(self, *args, **kwargs)
         tree = Hdf5TreeCtrl(self, -1, selection_callback=self.on_tree_select)
         self.sizer.Add(tree, 1, wx.ALL|wx.EXPAND, 5)
         self.tree = tree
         
     def update(self):
-        debug('Updated')
+        """Observer update handler.
+        """
         if not self.tree.hdf5_file==self.target.hdf5_data:
             self.tree.hdf5_file = self.target.hdf5_data
 
     def on_tree_select(self, node_path):
+        """Callback from tree on selection change.
+        """
         debug('node cursor set to  %s' %node_path)
         self.target.node_cursor = node_path
         self.target.status_changed()
@@ -136,15 +141,20 @@ class SimpleHdf5TreeInspector(InspectorPage):
     """Simple HDF5 tree inspector.
     """
     def __init__(self, *args, **kwargs):
+        """Initializer.
+        """
         InspectorPage.__init__(self, *args, **kwargs)
+        # path text.
         path_label = wx.StaticText(self, -1, 'Path')
         path_text = wx.TextCtrl(self, -1, style=wx.TE_READONLY)
+        # attributes grid.
         attr_label = wx.StaticText(self, -1, 'Attributes')
         attr_grid = Grid(self, -1, size=(-1, 100))
         attr_grid.CreateGrid(0, 2)
         attr_grid.SetColLabelValue(0, 'Key')
         attr_grid.SetColLabelValue(1, 'Value')
         attr_grid.EnableEditing(False)
+        # values (for datasets) grid.
         vals_label = wx.StaticText(self, -1, 'Values')
         vals_grid = Grid(self, -1)
         vals_grid.CreateGrid(0, 0)
@@ -160,6 +170,9 @@ class SimpleHdf5TreeInspector(InspectorPage):
         self.vals_grid = vals_grid
         
     def update(self):
+        """Observer update handler.
+        """
+        # reset values (delete existing rows for grids)
         self.path_text.SetValue('')
         self.attr_grid.HideRowLabels()
         if self.attr_grid.GetNumberRows():
@@ -169,35 +182,36 @@ class SimpleHdf5TreeInspector(InspectorPage):
             self.vals_grid.DeleteRows(0, self.vals_grid.GetNumberRows())
         if self.vals_grid.GetNumberCols():
             self.vals_grid.DeleteCols(0, self.vals_grid.GetNumberCols())
+        # check for current node cursor of target.
         current_path = self.target.node_cursor
-        if current_path:
-            self.path_text.SetValue(current_path)
-            hdf5_data = self.target.hdf5_data
-            if hdf5_data:
-                node = hdf5_data.get(current_path)
-                if hasattr(node, 'attrs'):
-                    n_attrs = len(node.attrs.items())
-                    grid = self.attr_grid
-                    grid.InsertRows(0, n_attrs)
-                    for row_idx, (key, value) in enumerate(node.attrs.items()):
-                        grid.SetCellValue(row_idx, 0, key)
-                        grid.SetCellValue(row_idx, 1, "%s" %value)
-                if hasattr(node, 'value'):
-                    grid = self.vals_grid
-                    labels = node.dtype.names
-                    n_labels = len(labels)
-                    grid.InsertCols(0, n_labels)
-                    grid.InsertRows(0, node.len())
-                    for i, label in enumerate(labels):
-                        grid.SetColLabelValue(i, label)
-                    for row_idx, row_data in enumerate(node.value):
-                        for col_idx in range(n_labels):
-                            grid.SetCellValue(row_idx, col_idx, "%s" %row_data[col_idx])
+        hdf5_data = self.target.hdf5_data
+        if (current_path is None) or (hdf5_data is None):
+            return
+        # current_path and hdf5_data is valid, let's inspect it.
+        self.path_text.SetValue(current_path)
+        node = hdf5_data.get(current_path)
+        # for node having attrs, populate attrs grid.
+        if hasattr(node, 'attrs'):
+            n_attrs = len(node.attrs.items())
+            grid = self.attr_grid
+            grid.InsertRows(0, n_attrs)
+            for row_idx, (key, value) in enumerate(node.attrs.items()):
+                grid.SetCellValue(row_idx, 0, key)
+                grid.SetCellValue(row_idx, 1, "%s" %value)
+        # for node having value (implies dataset), populate values grid.
+        if hasattr(node, 'value'):
+            grid = self.vals_grid
+            labels = node.dtype.names
+            n_labels = len(labels)
+            grid.InsertCols(0, n_labels)
+            grid.InsertRows(0, node.len())
+            for i, label in enumerate(labels):
+                grid.SetColLabelValue(i, label)
+            for row_idx, row_data in enumerate(node.value):
+                for col_idx in range(n_labels):
+                    grid.SetCellValue(row_idx, col_idx, "%s" %row_data[col_idx])
             
 register_inspector_page('SimpleHdf5TreeVisualizerNode', SimpleHdf5TreeInspector)
-
-
-
 
 
 if __name__=='__main__':
