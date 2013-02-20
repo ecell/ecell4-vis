@@ -174,10 +174,10 @@ class SimpleHdf5TreeInspector(InspectorPage):
         """
         # reset values (delete existing rows for grids)
         self.path_text.SetValue('')
-        self.attr_grid.HideRowLabels()
+        self.attr_grid.SetRowLabelSize(0) # HideRowLabels()
         if self.attr_grid.GetNumberRows():
             self.attr_grid.DeleteRows(0, self.attr_grid.GetNumberRows())
-        self.vals_grid.HideRowLabels()
+        self.vals_grid.SetRowLabelSize(0) # HideRowLabels()
         if self.vals_grid.GetNumberRows():
             self.vals_grid.DeleteRows(0, self.vals_grid.GetNumberRows())
         if self.vals_grid.GetNumberCols():
