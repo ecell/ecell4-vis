@@ -2,7 +2,6 @@
 """ec4vis.pipeline.panel --- Workspace panel in visualizer application.
 """
 import wx
-from wx.lib.mixins import treemixin
 
 # this allows module-wise execution
 try:
@@ -50,7 +49,7 @@ class PipelineTreeCtrl(TreeCtrlPlus):
         """
         style = kwargs.pop('style', 0)|wx.TR_NO_BUTTONS|wx.TR_HAS_BUTTONS
         kwargs['style'] = style
-        wx.TreeCtrl.__init__(self, *args, **kwargs)
+        TreeCtrlPlus.__init__(self, *args, **kwargs)
         # tree item menu
         self.tree_menu = PipelineTreeItemMenu()
         # initial pipeline set to None
