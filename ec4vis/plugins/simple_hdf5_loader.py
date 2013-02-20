@@ -41,11 +41,8 @@ class SimpleHdf5LoaderNode(PipelineNode):
     OUTPUT_SPEC = [Hdf5FileSpec]
     def __init__(self, *args, **kwargs):
         self._hdf5_data = None
+        self._uri = None
         PipelineNode.__init__(self, *args, **kwargs)
-
-    def handle_downward_event(self, pipeline_event):
-        if isinstance(pipeline_event, UpdateEvent):
-            self.status_changed()
 
     @log_call
     def internal_update(self):
@@ -58,10 +55,13 @@ class SimpleHdf5LoaderNode(PipelineNode):
         """Property getter for hdf5_data
         """
         # examine cache
+        uri = self.parent.request_data(UriSpec)
+        if not (self._uri==uri):
+            self._hdf5_data = None
+            self._uri = uri
         if self._hdf5_data:
             pass
         else: # self._hdf5_data is None
-            uri = self.parent.request_data(UriSpec)
             if uri is None:
                 return
             debug('hdf5 data uri=%s' % uri)
@@ -80,8 +80,8 @@ class SimpleHdf5LoaderNode(PipelineNode):
     def request_data(self, spec, **kwargs):
         """Provides particle data.
         """
-        if spec is Hdf5FileSpec:
-            data = self.hdf5_data
+        if spec.__name__=='Hdf5FileSpec':
+            debug('Serving Hdf5FileSpec')
             return self.hdf5_data # this may be None if datasource is not valid.
         return None
             
