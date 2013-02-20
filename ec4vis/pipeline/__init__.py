@@ -350,7 +350,9 @@ class PipelineNode(object):
     def handle_downward_event(self, pipeline_event):
         """Handles downstreaming pipeline event. Subclass may override.
         """
-        pass # empty!
+        # default behaviour will respond to UpdateEvent.
+        if isinstance(pipeline_event, UpdateEvent):
+            self.status_changed()
 
     def propagate_up(self, pipeline_event):
         """Propagates event upward.
@@ -403,7 +405,7 @@ class PipelineNode(object):
         """Notifies status change (to inspectors).
         """
         self.internal_update()
-        debug('%s' %self.observers)
+        debug('Observers of %s: %s' %(self, self.observers))
         for observer in self.observers:
             observer.update()
 
@@ -543,10 +545,6 @@ class RootPipelineNode(PipelineNode):
         """RootPipelineNode denies connect().
         """
         raise ValueError('%s should always be root.' %self.__class__.__name__)
-
-    def handle_downward_event(self, pipeline_event):
-        if isinstance(pipeline_event, UpdateEvent):
-            self.status_changed()
 
 
 class PipelineTree(object):
