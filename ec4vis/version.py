@@ -1,4 +1,4 @@
 # coding: utf-8
 """ec4vis.version --- Application Version.
 """
-VERSION = (0, 0, 1) # pre-pre-pre-alpha
+VERSION = (0, 1, 0) # pre-pre-alpha
