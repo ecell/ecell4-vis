@@ -17,14 +17,14 @@ from ec4vis.logger import debug, info, log_call, logger, DEBUG
 # pipeline node registry
 PIPELINE_NODE_REGISTRY = {}
 
-@log_call
+
 def register_pipeline_node(node_class, name=None):
     """Registers new pipeline node class to registry.
     """
     if bool(name)==False:
         name = node_class.__name__
     PIPELINE_NODE_REGISTRY[name] = node_class
-    debug('registered pipeline node %s as %s' %(name, node_class))
+    debug('Registered pipeline node %s as %s' %(node_class.__name__, name))
 
 
 class PipelineEvent(object):
@@ -357,7 +357,6 @@ class PipelineNode(object):
     def propagate_up(self, pipeline_event):
         """Propagates event upward.
         """
-        debug('%s propagating up %s' %(self.__class__.__name__, pipeline_event))
         if pipeline_event.note_visited(self):
             self.handle_upward_event(pipeline_event)
             # call for extra event handlers
@@ -370,7 +369,6 @@ class PipelineNode(object):
     def propagate_down(self, pipeline_event):
         """Propagates event downward.
         """
-        debug('%s propagating down %s' %(self.__class__.__name__, pipeline_event))
         if pipeline_event.note_visited(self):
             self.handle_downward_event(pipeline_event)
             # call for extra event handlers
@@ -387,35 +385,30 @@ class PipelineNode(object):
         """
         if observer not in self.observers:
             self.observers.append(observer)
-            debug('>>>>> ADD: observers are now %s' %self.observers)
 
     def remove_observer(self, observer):
         """Remove inspector from the node.
         """
         if observer in self.observers:
             self.observers.remove(observer)
-            debug('>>>>> REMOVE: observers are now %s' %self.observers)
 
     def internal_update(self):
         """Update internal status.
         """
 
-    @log_call
-    def status_changed(self):
-        """Notifies status change (to inspectors).
+    def status_changed(self, exclude_observers=()):
+        """Notifies status change (to observers).
         """
         self.internal_update()
-        debug('Observers of %s: %s' %(self, self.observers))
         for observer in self.observers:
-            observer.update()
+            if observer not in exclude_observers:
+                observer.update()
 
-    @log_call
     def save(self):
         """Saves state.
         """
         return None
 
-    @log_call
     def restore(self, info):
         """Restores state.
         """
@@ -518,7 +511,6 @@ class RootPipelineNode(PipelineNode):
         """Property setter for datasource
         """
         self._datasource = datasource
-        debug('RootPipelineNode::datasource set to %s' %datasource)
 
     datasource = property(get_datasource, set_datasource)
 

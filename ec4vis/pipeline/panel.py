@@ -55,7 +55,6 @@ class PipelineTreeCtrl(TreeCtrlPlus):
         # initial pipeline set to None
         self._pilepline = None
 
-    @log_call
     def get_subtree_data(self, tree_item_id):
         """Recursively collects target data from subtree of given tree_item_id.
         """
@@ -65,7 +64,6 @@ class PipelineTreeCtrl(TreeCtrlPlus):
     def set_pipeline(self, pipeline):
         """Bind model to the tree.
         """
-        debug('PipelineTreeCtrl::set_pipeline() setting pilepline at %d' %(id(pipeline)))
         self._pipeline = pipeline
         self.rebuild_root()
 
@@ -96,7 +94,6 @@ class PipelineTreeCtrl(TreeCtrlPlus):
     def rebuild_root(self):
         """Rebuild tree from the toplevel.
         """
-        debug('PipelineTreeCtrl::rebuild_root()')
         self.DeleteAllItems()
         root_item_id = self.AddRoot("<<DataSource>>")
         root_object = None
@@ -104,14 +101,12 @@ class PipelineTreeCtrl(TreeCtrlPlus):
             root_object = self.pipeline.root
         self.SetPyData(root_item_id, root_object)
         self.rebuild_tree(root_item_id)
-        debug('rebuild_root() succellfully.')
 
     def rebuild_tree(self, item_id):
         """Rebuild subtree beneath the given item_id.
         """
         # delete children beneath.
         self.DeleteChildren(item_id)
-        debug('PipelineTreeCtrl::rebuild_tree() building under item #%s' %item_id)
         node_data = self.GetPyData(item_id)
         if node_data is None:
             return
@@ -127,7 +122,6 @@ class PipelineTreeCtrl(TreeCtrlPlus):
 
     def popup_tree_menu(self):
         self.PopupMenu(self.tree_menu)
-
 
 
 class PipelinePanel(wx.Panel):
