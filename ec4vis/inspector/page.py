@@ -21,7 +21,7 @@ def register_inspector_page(node_class_name, page_class):
     """Register new page class to registry.
     """
     INSPECTOR_PAGE_REGISTRY[node_class_name] = page_class
-    debug('Registered inspector %s for pipeline node type %s' %(page_class, node_class_name))
+    debug('Registered inspector %s for pipeline node type %s' %(page_class.__name__, node_class_name))
 
 
 class InspectorPage(ObserverPage):
