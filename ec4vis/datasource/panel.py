@@ -34,7 +34,6 @@ class DatasourceNotebook(AuiNotebookPlus):
 class DatasourcePanel(wx.Panel):
     """Datasource panel for browser.
     """
-    @log_call
     def __init__(self, *args, **kwargs):
         """Initializer.
         """
@@ -48,13 +47,11 @@ class DatasourcePanel(wx.Panel):
         sizer.Add(self.notebook, 1, wx.EXPAND|wx.ALL, 0)
         self.SetSizer(sizer)
 
-    @log_call
     def finalize(self):
         """Finalizer.
         """
         # placeholder atm
 
-    @log_call
     def OnNotebookPageChanged(self, event):
         """Event handler called on notebook change.
         """
@@ -64,7 +61,7 @@ class DatasourcePanel(wx.Panel):
         else:
             # if no page is left
             self.datasource.uri = None
-        debug('now datasource.uri is set to %s' %self.datasource.uri)
+        debug('datasource.uri set to %s' %self.datasource.uri)
         wx.PostEvent(self, DatasourceChangedEvent())
 
 
@@ -107,7 +104,6 @@ if __name__=='__main__':
             if page and page.datasource:
                 message = page.datasource.uri
             wx.MessageBox(message,  'Datasource panel changed', wx.OK)
-
 
     app = App(0)
     app.MainLoop()

@@ -20,20 +20,18 @@ DatasourceChangedEvent, EVT_DATASOURCE_CHANGED = wx.lib.newevent.NewEvent()
 # datasource page registry
 DATASOURCE_PAGE_REGISTRY = {}
 
-@log_call
 def register_datasource_page(page_class, name=None):
     """Registers new page class to registry.
     """
     if bool(name)==False:
         name = page_class.__name__
     DATASOURCE_PAGE_REGISTRY[name] = page_class
-    debug('registered datasource %s as %s' %(name, page_class))
+    debug('Registered datasource %s as %s' %(page_class.__name__, name))
 
 
 class DatasourcePage(wx.Panel):
     """Abstract superclass for pages in a datasource notebook.
     """
-    @log_call
     def __init__(self, *args, **kwargs):
         # this should be popped before superclass initializer.
         self.datasource = kwargs.pop('datasource')
@@ -49,7 +47,6 @@ class DatasourcePage(wx.Panel):
         """
         return NotImplemented
 
-    @log_call
     def datasource_changed(self):
         """Posts DatasourceChangedEvent().
 

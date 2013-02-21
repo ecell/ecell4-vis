@@ -36,4 +36,3 @@ class Datasource(object):
 if __name__=='__main__':
     from doctest import testmod, ELLIPSIS
     testmod(optionflags=ELLIPSIS)
-
