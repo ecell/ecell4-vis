@@ -47,6 +47,7 @@ class ConsolePanel(wx.Panel):
         text_ctrl = wx.TextCtrl(
             self, -1, '',
             style=wx.TE_READONLY|wx.TE_BESTWRAP|wx.TE_MULTILINE)
+        # prepare a hooked stream handler
         console_stream_handler = StreamHandler(stream=ConsoleLogStream(text_ctrl))
         console_stream_handler.setFormatter(
             Formatter('%(asctime)s %(levelname)-8s %(message)s', '%Y-%m-%d %H:%M:%S'))
