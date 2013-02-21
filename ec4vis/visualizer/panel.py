@@ -39,7 +39,6 @@ class VisualizerPanel(wx.Panel):
         # bindings
         self.notebook = notebook
 
-    @log_call
     def finalize(self):
         """Finalize panel.
         """

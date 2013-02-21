@@ -17,12 +17,11 @@ from ec4vis.utils.wx_.observer_page import ObserverPage
 VISUALIZER_PAGE_REGISTRY = {}
 
 
-@log_call
 def register_visualizer_page(node_class_name, page_class):
     """Registers new page class to registry.
     """
     VISUALIZER_PAGE_REGISTRY[node_class_name] = page_class
-    debug('registered visualizer %s for pipeline node type %s' %(page_class, node_class_name))
+    debug('Registered visualizer %s for pipeline node type %s' %(page_class.__name__, node_class_name))
 
 
 class VisualizerPage(ObserverPage):

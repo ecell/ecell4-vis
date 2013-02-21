@@ -35,7 +35,6 @@ class Vtk3dVisualizerPage(VisualizerPage):
         if settings:
             self.configure_renderer(settings)
 
-    @log_call
     def finalize(self):
         """Finalize page, visualizer
         """
@@ -44,7 +43,6 @@ class Vtk3dVisualizerPage(VisualizerPage):
     def _get_aspect_ratio(self):
         return self._aspect_ratio
 
-    @log_call
     def _set_aspect_ratio(self, aspect_ratio):
         self._aspect_ratio = aspect_ratio
         debug('forcing aspect ratio as %s' %aspect_ratio)
@@ -52,7 +50,6 @@ class Vtk3dVisualizerPage(VisualizerPage):
 
     aspect_ratio = property(_get_aspect_ratio, _set_aspect_ratio)
 
-    @log_call
     def configure_renderer(self, settings):
         """Configure rendering environment.
         """
@@ -76,7 +73,6 @@ class Vtk3dVisualizerPage(VisualizerPage):
         light_kit.SetKeyLightIntensity(settings.light_intensity)
         light_kit.AddLightsToRenderer(renderer)
 
-    @log_call
     def setup_renderer(self):
         """Set up vtk renderers.
         """
@@ -93,7 +89,6 @@ class Vtk3dVisualizerPage(VisualizerPage):
         self.render_window.GetRenderWindow().AddRenderer(renderer)
         self.renderer = renderer
 
-    @log_call
     def force_aspect_ratio(self, width, height):
         """
         Force size of render_window to follow aspect ratio.
@@ -108,19 +103,16 @@ class Vtk3dVisualizerPage(VisualizerPage):
         height = int(min(height, width*ah/float(aw)))
         self.render_window.SetSize((width, height))
 
-    @log_call
     def OnSize(self, event):
         """Resize handler.
         """
         self.force_aspect_ratio(*event.GetSize())
 
-    @log_call
     def render(self):
         """Do real rendering action.
         """
         self.render_window.Render()
 
-    @log_call
     def update(self):
         """Updates content of the rendering window.
         """
