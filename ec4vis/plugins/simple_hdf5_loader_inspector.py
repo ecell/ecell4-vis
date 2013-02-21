@@ -23,8 +23,11 @@ class SimpleHdf5LoaderInspector(InspectorPage):
     PROP_NAMES = ['filename', 'mode', 'driver', 'libver', 'userblock_size',
                   'name', 'id', 'ref', 'attrs']
     def __init__(self, *args, **kwargs):
+        """Initializer.
+        """
         InspectorPage.__init__(self, *args, **kwargs)
         widgets = []
+        # create inspector fields for common h5py.File attributes.
         for prop_name in self.PROP_NAMES:
             label = wx.StaticText(self, -1, prop_name.capitalize())
             text_ctrl = wx.TextCtrl(self, -1, '', style=wx.TE_READONLY)
@@ -32,6 +35,7 @@ class SimpleHdf5LoaderInspector(InspectorPage):
             widgets.extend([
                 (label, 0, wx.ALL|wx.EXPAND),
                 (text_ctrl, 1, wx.ALL|wx.EXPAND)])
+        # pack in FlexGridSizer.
         fx_sizer = wx.FlexGridSizer(cols=2, vgap=5, hgap=5)
         fx_sizer.AddMany(widgets)
         fx_sizer.AddGrowableCol(1)
@@ -45,6 +49,7 @@ class SimpleHdf5LoaderInspector(InspectorPage):
             hdf5_data = self.target.hdf5_data
             debug('hdf5_data at %s' %(hdf5_data))
             if hdf5_data:
+                # glob attributes from the hdf5 data.
                 for prop_name in self.PROP_NAMES:
                     widget = getattr(self, prop_name, None)
                     prop_value = getattr(hdf5_data, prop_name, None)
