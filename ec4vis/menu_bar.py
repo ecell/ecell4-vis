@@ -20,23 +20,6 @@ MENU_STRUCTURE = (
         # attr_bit, label, accel_key, tip
         ('add_node', 'Add Node...', '', 'Add pipeline node.'),
         )),
-    #('Workspace', (
-    #    ('set_root', 'Set Root Directory...', 'Ctrl-O', 'Set Root Directory for Workspace.'),
-        #('save', 'Save Workspace', 'Ctrl-S', 'Save current workspace state.'),
-        #('save_as', 'Save Workspace As...', 'Ctrl-Shift-S', 'Save current workspace state with given filename.'),
-        #('load', 'Load Workspace...', 'Ctrl-O', 'Load current workspace state.'),
-        #('remove', 'Remove Selected Item', '', 'Remove item in selection.'),
-        #('add_file', 'Add Data Files...', '', 'Add data file(s).'),
-        #('add_loader', 'Add Loader...', '', 'Add a loader.'),
-        #('add_visualizer', 'Add Visualizer...', '', 'Add a visualizer.'),
-        #('add_filter', 'Add Filter...', '', 'Add a filter.'),
-    #    )),
-    #('Visual', (
-    #    ('toggle', 'Toggle Visibility', '', 'Toggle visivility.'),
-    #    )),
-    #('Parameter', (
-    #    ('import', 'Import Parameters...', '', 'Import parameters.'),
-    #    )),
     )
 
 
@@ -89,6 +72,8 @@ if __name__=='__main__':
             return True
 
         def OnQuitMenu(self, evt):
+            """Handler on Quit menu.
+            """
             self.ExitMainLoop()
         
     app = App(0)
