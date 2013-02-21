@@ -35,7 +35,6 @@ APP_TITLE_NAME = 'E-Cell 4 Data Browser Version %d.%d.%d' %VERSION
 class BrowserApp(wx.App):
     """Application object for browser. 
     """
-    @log_call
     def __init__(self, *args, **kwargs):
         
         # application status
@@ -48,7 +47,6 @@ class BrowserApp(wx.App):
         wx.App.__init__(self, *args, **kwargs)
 
     # wx built-in Event handlers
-    @log_call
     def OnInit(self):
         """Integrated initialization hook.
         """
@@ -60,7 +58,6 @@ class BrowserApp(wx.App):
         self.post_init_setup()
         return True
 
-    @log_call
     def OnExit(self):
         """Integrated finalization hook.
         """
@@ -68,7 +65,6 @@ class BrowserApp(wx.App):
         self.finalize()
         return
 
-    @log_call
     def init_plugins(self):
         """Initialize plugins
         """
@@ -78,7 +74,6 @@ class BrowserApp(wx.App):
             message = '%s ... %s' %(modpath, 'OK' if status else 'FAILED')
             debug(message)
 
-    @log_call
     def init_ui(self):
         """Initializes UI.
         """
@@ -98,7 +93,6 @@ class BrowserApp(wx.App):
         self.SetTopWindow(self.browser)
         self.browser.Show(True)
 
-    @log_call
     def init_browser(self):
         """Initializes browser frame.
         """
@@ -106,7 +100,6 @@ class BrowserApp(wx.App):
         # bidings
         self.browser = browser
 
-    @log_call
     def init_pipeline_panel(self):
         """Initializes pipeline panel.
         """
@@ -133,7 +126,6 @@ class BrowserApp(wx.App):
         # make sure that root node is selected.
         pipeline_tree_ctrl.Unselect()
 
-    @log_call
     def init_datasource_panel(self):
         """Initializes datasource panel.
         """
@@ -143,7 +135,6 @@ class BrowserApp(wx.App):
         # outlet bindings
         self.datasource_panel = datasource_panel
 
-    @log_call
     def init_inspector_panel(self):
         """Initializes inspector panel.
         """
@@ -156,7 +147,6 @@ class BrowserApp(wx.App):
         self.inspector_panel = inspector_panel
         self.inspector_notebook = inspector_notebook
 
-    @log_call
     def init_visualizer_panel(self):
         """Initializes visualizer panel.
         """
@@ -167,7 +157,6 @@ class BrowserApp(wx.App):
         self.visualizer_panel = visualizer_panel
         self.visualizer_notebook = visualizer_notebook
         
-    @log_call
     def init_menu(self):
         """Initializes application menu.
         """
@@ -185,7 +174,6 @@ class BrowserApp(wx.App):
         # outlet bindings
         self.menu_bar = menu_bar
 
-    @log_call
     def post_init_setup(self):
         """The last phase of initialization.
         """
@@ -205,7 +193,6 @@ class BrowserApp(wx.App):
             self.pipeline_tree_ctrl.rebuild_root()
             self.pipeline_tree_ctrl.ExpandAll()
 
-    @log_call
     def finalize(self):
         """Finalizer.
         """
@@ -217,21 +204,18 @@ class BrowserApp(wx.App):
     # In-app convenient properties
 
     @property
-    @log_call
     def current_datasource_page(self):
         """Returns currently selected Datasource Page.
         """
         return self.datasource_panel.notebook.selected_page
 
     @property
-    @log_call
     def current_visualizer_page(self):
         """Returns currently selected Visualzier Page.
         """
         return None
 
     @property
-    @log_call
     def current_visualizer(self):
         """Returns Visualizer for selected Visualzier Page.
         """
@@ -240,7 +224,6 @@ class BrowserApp(wx.App):
         return None
 
     @property
-    @log_call
     def current_pipeline_node_info(self):
         """Returns a tuple of tree item id and node object for for currently selected Pipeline Node.
         """
@@ -251,14 +234,12 @@ class BrowserApp(wx.App):
         return (None, None)
     
     @property
-    @log_call
     def current_inspector_page(self):
         """Returns currently selected Inspector Page.
         """
         return None
     
     @property
-    @log_call
     def current_inspector(self):
         """Returns Inspector for currently selected Inspector Page.
         """
@@ -266,7 +247,6 @@ class BrowserApp(wx.App):
             return self.current_inspector_page.inspector
         return None
 
-    @log_call
     def OnBrowserClosing(self, event):
         """Hook from browser on closing.
         """
@@ -289,8 +269,6 @@ class BrowserApp(wx.App):
 
         # self.registry.sync()
 
-            
-    @log_call
     def OnDatasourceRemoveMenu(self, event):
         """Called on 'Datasource' -> 'Remove' menu.
         """
@@ -298,7 +276,6 @@ class BrowserApp(wx.App):
         if selected_page_index is wx.NOT_FOUND:
             wx.MessageBox('Select any datasource page first.', 'Invalid operation')
 
-    @log_call
     def OnDatasourceAddMenu(self, event):
         """Called on 'Datasource'->'Add...' menu.
         """
@@ -314,7 +291,6 @@ class BrowserApp(wx.App):
             self.datasource_panel.notebook.create_page(page_class, label_name)
         dlg.Destroy()
 
-    @log_call
     def check_pipeline_node_selected(self):
         """Show alert if no pipeline node is selected, returning True. Otherwise False.
         """
@@ -324,7 +300,6 @@ class BrowserApp(wx.App):
             wx.MessageBox('No node is selected.', 'Invalid operation.')
         return  selected_tree_item_id, selected_node
 
-    @log_call
     def OnPipelineAddNodeMenu(self, event):
         """Called on 'Pipeline'->'Add Node...' menu.
         """
@@ -355,7 +330,6 @@ class BrowserApp(wx.App):
             self.pipeline_tree_ctrl.Expand(parent_tree_item_id)
         dlg.Destroy()
 
-    @log_call
     def OnPipelineDeleteNodeMenu(self, event):
         """Called on 'Pipeline'->'Delete Node...' menu.
         """
@@ -385,7 +359,6 @@ class BrowserApp(wx.App):
         # phase 5: delete pipeline node
         del selected_pipeline_node
 
-    @log_call
     def OnPipelineShowInspectorMenu(self, event):
         """Called on 'Pipeline'->'Show Inspector...' menu.
         """
@@ -415,7 +388,6 @@ class BrowserApp(wx.App):
             inspector_page_instance.update()
         self.inspector_notebook.SetSelection(inspector_page_index)
 
-    @log_call
     def OnPipelineShowVisualizerMenu(self, event):
         """Called on 'Pipeline'->'Show visualizer...' menu.
         """
@@ -446,7 +418,6 @@ class BrowserApp(wx.App):
             visualizer_page_instance.update()
         self.visualizer_notebook.SetSelection(visualizer_page_index)
 
-    @log_call
     def OnAppAboutMenu(self, event):
         """Called on 'App'->'About' menu.
         """
@@ -456,14 +427,12 @@ class BrowserApp(wx.App):
         dlg.ShowModal()
         dlg.Destroy()
 
-    @log_call
     def OnAppQuitMenu(self, event):
         """Called on 'App'->'Quit' menu.
         """
         debug('App::OnAppQuitMenu.')
         self.ExitMainLoop()
 
-    @log_call
     def OnDatasourceChanged(self, event):
         """Hook on datasource change.
         """
@@ -471,7 +440,6 @@ class BrowserApp(wx.App):
         pevent = UpdateEvent(None)
         self.pipeline.propagate(pevent)
 
-    @log_call
     def OnPipelineTreeSelChanged(self, event):
         """Called on selection change on pipeline tree item.
         """
@@ -485,7 +453,6 @@ class BrowserApp(wx.App):
         self.pipeline_tree_ctrl.tree_menu.enable_show_visualizer(
             node_type_name in VISUALIZER_PAGE_REGISTRY.keys())
 
-    @log_call
     def OnPipelineTreeItemMenu(self, event):
         """Called on right-click on a pipeline tree item.
         """
