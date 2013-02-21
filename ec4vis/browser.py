@@ -34,7 +34,6 @@ def pane_info(caption):
 class BrowserFrame(wx.Frame):
     """Browser window.
 
-
     Window layout:
     
     +------------+------------+-----------+
@@ -54,16 +53,13 @@ class BrowserFrame(wx.Frame):
     +-------------------------------------+
     
     """
-    @log_call
     def __init__(self, *args, **kwargs):
         """Initializer.
         """
         # this should be before superclass initializer.
         pipeline = kwargs.pop('pipeline')
-        debug('pipeline: %s' %pipeline)
         wx.Frame.__init__(self, *args, **kwargs)
         datasource = pipeline.root.datasource
-        debug('datasource: %s' %datasource)
         # datasource panel
         datasource_panel = DatasourcePanel(self, -1, datasource=datasource)
         # pipeline panel
@@ -103,7 +99,6 @@ class BrowserFrame(wx.Frame):
         # event bindings
         self.Bind(wx.EVT_CLOSE, self.OnClose)
 
-    @log_call
     def finalize(self):
         """Finalizer.
         """
@@ -117,7 +112,6 @@ class BrowserFrame(wx.Frame):
         self.aui_manager.UnInit()
         del self.aui_manager
         
-    @log_call
     def OnClose(self, evt):
         """Make sure to destroy aui_manager, otherwise it crashes.
         """
