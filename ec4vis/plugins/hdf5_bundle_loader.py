@@ -59,7 +59,10 @@ class FileBundle(object):
                 
     def get_path_at(self, index):
         if self.is_ok:
-            return self.cache.get(index, None)
+            try:
+                return self.cache[index]
+            except IndexError:
+                pass
         return None
         
 

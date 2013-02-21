@@ -50,7 +50,7 @@ class SimpleParticleLoaderNode(PipelineNode):
         # self._particle_data is left None if something wrong in loading data.
         return self._particle_data
         
-    def request_data(self, spec):
+    def request_data(self, spec, **params):
         """Provides particle data.
         """
         if spec is ParticleDataSpec:

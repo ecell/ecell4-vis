@@ -521,7 +521,7 @@ class RootPipelineNode(PipelineNode):
         """
         return [DatasourceSpec, UriSpec]
 
-    def request_data(self, spec):
+    def request_data(self, spec, **params):
         """Returns datasource or uri
         """
         if spec is DatasourceSpec:

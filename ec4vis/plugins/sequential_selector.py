@@ -45,7 +45,7 @@ class SequentialHdf5SelectorNode(PipelineNode):
     def request_data(self, spec, **kwargs):
         if spec is Hdf5DataSpec:
             if self.index_cursor in range(-self.n_data, self.n_data):
-                return self.parent.request_data(spec, self.index_cursor)
+                return self.parent.request_data(spec, index=self.index_cursor)
             else:
                 warning('Index cursor is set to wrong value.')
         return None
@@ -71,6 +71,7 @@ class SequentialHdf5SelectorInspector(InspectorPage):
         self.sizer.Add(cursor_label, 0, wx.ALL|wx.EXPAND, 5)
         self.sizer.Add(cursor_spin, 0, wx.ALL|wx.EXPAND, 5)
         self.n_data = n_data
+        self.cursor_spin = cursor_spin
 
     def OnCursorSpin(self, event):
         self.target.index_cursor = self.cursor_spin.GetValue()
