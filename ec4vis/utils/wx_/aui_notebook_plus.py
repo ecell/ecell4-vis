@@ -27,7 +27,6 @@ class AuiNotebookPlus(wx.aui.AuiNotebook):
             found = self.GetPage(selected_page_index)
         return found
 
-    @log_call
     def finalize(self):
         """Finalize notebook (and its pages).
         """
@@ -35,7 +34,6 @@ class AuiNotebookPlus(wx.aui.AuiNotebook):
         while self.GetPageCount():
             self.destroy_page(0)
 
-    @log_call
     def create_page(self, page_class, page_name, **kwargs):
         """Create a page instance of page_class and add it into the notebook with page_name.
         """
@@ -44,7 +42,6 @@ class AuiNotebookPlus(wx.aui.AuiNotebook):
         page_index = self.AddPage(page_instance, page_name, select=True)
         return page_index, page_instance
 
-    @log_call
     def destroy_page(self, page_index):
         """Remove page of page_index from the notebok and destroy it.
 
@@ -54,7 +51,6 @@ class AuiNotebookPlus(wx.aui.AuiNotebook):
         page.finalize()
         self.DeletePage(page_index)
 
-    @log_call
     def destroy_selected_page(self):
         """Destroy page instance from the notebook.
         """
@@ -106,7 +102,6 @@ class AuiNotebookPlusWithTargetBindingPage(AuiNotebookPlus):
         AuiNotebookPlus.__init__(self, *args, **kwargs)
         self.Bind(wx.aui.EVT_AUINOTEBOOK_PAGE_CLOSE, self.OnPageClose)
     
-    @log_call
     def find_page_for_target(self, target):
         """Finds page which binds given target
         """
@@ -121,7 +116,6 @@ class AuiNotebookPlusWithTargetBindingPage(AuiNotebookPlus):
                     found_page_instance = page_instance
         return found_page_index, found_page_instance
 
-    @log_call
     def destroy_page_for_target(self, target):
         """Destroys page which binds given target
         """
@@ -133,7 +127,6 @@ class AuiNotebookPlusWithTargetBindingPage(AuiNotebookPlus):
                 target.remove_observer(page_instance_to_delete)
             self.destroy_page(page_index_to_delete)
 
-    @log_call
     def OnPageClose(self, event):
         """On page close, the page should be removed from the observers list.
         """

@@ -35,7 +35,6 @@ class ObserverPage(wx.Panel, Observer):
         self.SetSizer(self._sizer)
         return self._sizer
 
-    @log_call
     def finalize(self):
         """Finalizer.
         """

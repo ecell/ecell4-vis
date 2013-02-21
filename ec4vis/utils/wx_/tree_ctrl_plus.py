@@ -165,6 +165,7 @@ class TreeCtrlPlus(wx.TreeCtrl):
 
 
 if __name__=='__main__':
-    from doctest import testmod, ELLIPSIS
-    testmod(optionflags=ELLIPSIS)
+    # TBD
+    # from doctest import testmod, ELLIPSIS
+    # testmod(optionflags=ELLIPSIS)
     
