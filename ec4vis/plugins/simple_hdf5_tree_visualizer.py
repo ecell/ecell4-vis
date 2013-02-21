@@ -16,18 +16,15 @@ except ImportError:
 from ec4vis.inspector.page import InspectorPage, register_inspector_page
 from ec4vis.logger import debug, log_call, warning
 from ec4vis.pipeline import PipelineNode, PipelineSpec, UriSpec, register_pipeline_node
+from ec4vis.pipeline.specs import Hdf5DataSpec
 from ec4vis.utils.wx_ import TreeCtrlPlus
 from ec4vis.visualizer.page import VisualizerPage, register_visualizer_page
-
-# plugins
-# from ec4vis.plugins.simple_hdf5_loader import Hdf5FileSpec
-from simple_hdf5_loader import Hdf5FileSpec
 
 
 class SimpleHdf5TreeVisualizerNode(PipelineNode):
     """Node representing a simple hdf5 tree visualizer.
     """
-    INPUT_SPEC = [Hdf5FileSpec]
+    INPUT_SPEC = [Hdf5DataSpec]
     OUTPUT_SPEC = []
     def __init__(self, *args, **kwargs):
         PipelineNode.__init__(self, *args, **kwargs)
@@ -36,7 +33,7 @@ class SimpleHdf5TreeVisualizerNode(PipelineNode):
     @property
     def hdf5_data(self):
         if self.parent:
-            return self.parent.request_data(Hdf5FileSpec)
+            return self.parent.request_data(Hdf5DataSpec)
         debug('No parent.')
             
 register_pipeline_node(SimpleHdf5TreeVisualizerNode)

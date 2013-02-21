@@ -15,10 +15,7 @@ except ImportError:
 
 from ec4vis.logger import debug, log_call, warning
 from ec4vis.pipeline import PipelineNode, PipelineSpec, UpdateEvent, UriSpec, register_pipeline_node
-
-
-class Hdf5FileSpec(PipelineSpec):
-    pass
+from ec4vis.pipeline.specs import Hdf5DataSpec
 
 
 class SimpleHdf5LoaderNode(PipelineNode):
@@ -33,12 +30,12 @@ class SimpleHdf5LoaderNode(PipelineNode):
     >>> root_node = RootPipelineNode(datasource=Datasource(uri=test_filename))
     >>> hdf5_node = SimpleHdf5LoaderNode()
     >>> hdf5_node.connect(root_node)
-    >>> hdf5_node.request_data(Hdf5FileSpec)
+    >>> hdf5_node.request_data(Hdf5DataSpec)
     <HDF5 file "dimer_particle_0005.hdf5" (mode r+)>
     
     """
     INPUT_SPEC = [UriSpec]
-    OUTPUT_SPEC = [Hdf5FileSpec]
+    OUTPUT_SPEC = [Hdf5DataSpec]
     def __init__(self, *args, **kwargs):
         self._hdf5_data = None
         self._uri = None
@@ -80,8 +77,8 @@ class SimpleHdf5LoaderNode(PipelineNode):
     def request_data(self, spec, **kwargs):
         """Provides particle data.
         """
-        if spec.__name__=='Hdf5FileSpec':
-            debug('Serving Hdf5FileSpec')
+        if spec==Hdf5DataSpec:
+            debug('Serving Hdf5DataSpec')
             return self.hdf5_data # this may be None if datasource is not valid.
         return None
             
