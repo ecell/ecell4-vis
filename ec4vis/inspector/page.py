@@ -16,12 +16,12 @@ from ec4vis.utils.wx_.observer_page import ObserverPage
 # inspector page registry
 INSPECTOR_PAGE_REGISTRY = {}
 
-@log_call
+
 def register_inspector_page(node_class_name, page_class):
     """Register new page class to registry.
     """
     INSPECTOR_PAGE_REGISTRY[node_class_name] = page_class
-    debug('registered inspector %s for pipeline node type %s' %(page_class, node_class_name))
+    debug('Registered inspector %s for pipeline node type %s' %(page_class, node_class_name))
 
 
 class InspectorPage(ObserverPage):
@@ -32,6 +32,7 @@ class InspectorPage(ObserverPage):
         """
         # this should be before superclass initializer.
         ObserverPage.__init__(self, *args, **kwargs)
+
 
 # load built-in inspectors
 import ec4vis.inspector.datasource

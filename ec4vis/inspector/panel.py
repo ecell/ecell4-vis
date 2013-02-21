@@ -68,5 +68,6 @@ if __name__=='__main__':
             frame.Show(True)
             self.SetTopWindow(frame)
             return True
+
     app = App(0)
     app.MainLoop()

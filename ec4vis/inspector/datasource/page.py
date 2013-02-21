@@ -1,5 +1,5 @@
 # coding: utf-8
-"""ec4vis.inspector.page --- Inspector page in visualizer application.
+"""ec4vis.inspector.page --- Built-in datasource (pipeline root node) inspector.
 """
 import wx, wx.aui
 
@@ -30,7 +30,6 @@ class DatasourceInspectorPage(InspectorPage):
         # self.sizer comes from parent.
         self.sizer.Add(h_sizer, 0, wx.EXPAND|wx.ALL, 10)
 
-    @log_call
     def update(self):
         """Update UI.
         """
