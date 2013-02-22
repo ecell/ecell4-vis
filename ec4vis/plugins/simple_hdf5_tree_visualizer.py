@@ -4,7 +4,6 @@
 import wx
 from wx.grid import Grid
 from urlparse import urlparse
-from h5py import File
 
 # this allows module-wise execution
 try:
@@ -30,7 +29,12 @@ class SimpleHdf5TreeVisualizerNode(PipelineNode):
         PipelineNode.__init__(self, *args, **kwargs)
         self.node_cursor = None
 
+    def internal_update(self):
+        self.node_cursor = None
+        debug('%s' %self.hdf5_data)
+
     @property
+    @log_call
     def hdf5_data(self):
         if self.parent:
             return self.parent.request_data(Hdf5DataSpec)

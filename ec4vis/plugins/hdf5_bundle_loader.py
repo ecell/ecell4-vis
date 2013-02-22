@@ -21,7 +21,7 @@ from ec4vis.pipeline.specs import Hdf5DataSpec, NumberOfItemsSpec
 
 class FileBundle(object):
 
-    def __init__(self, path, glob_pattern='*', sorter=sorted):
+    def __init__(self, path, glob_pattern='*.hdf5', sorter=sorted):
         self._path = path
         self.glob_pattern = glob_pattern
         self._cache = None
@@ -108,14 +108,17 @@ class Hdf5BundleLoaderNode(PipelineNode):
         """
         if spec==NumberOfItemsSpec:
             return self.bundle.n_files
-        if spec==Hdf5DataSpec:
+        elif spec==Hdf5DataSpec:
             index = kwargs.get('index', 0)
             data = self.cache.get(index, None)
             if data is None:
                 path = self.bundle.get_path_at(index)
                 if not(path is None):
-                    data = File(path)
-                    self.cache[index] = data
+                    try:
+                        data = File(path, mode='r')
+                        self.cache[index] = data
+                    except IOError:
+                        pass
             return data
         return None
 
