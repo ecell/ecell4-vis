@@ -71,14 +71,23 @@ class Hdf5BundleLoaderNode(PipelineNode):
     """
     INPUT_SPEC = [UriSpec]
     OUTPUT_SPEC = [Hdf5DataSpec, NumberOfItemsSpec]
-    
+    DEFAULT_GLOB_PATTERN = '*.hdf5'
+
     def __init__(self, *args, **kwargs):
         """Initializer.
         """
         self._bundle = None
         self._cache = None
-        self.glob_pattern = '*'
+        self.glob_pattern = self.DEFAULT_GLOB_PATTERN
         PipelineNode.__init__(self, *args, **kwargs)
+
+    def save(self):
+        return dict(glob_pattern=self.glob_pattern)
+
+    def restore(self, data):
+        if isinstance(data, dict):
+            self.glob_pattern = data.get(
+                'glob_pattern', self.DEFAULT_GLOB_PATTERN)
 
     @log_call
     def internal_update(self):

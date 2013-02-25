@@ -29,6 +29,13 @@ class SequentialHdf5SelectorNode(PipelineNode):
         self.index_cursor = 0
         PipelineNode.__init__(self, *args, **kwargs)
 
+    def save(self):
+        return dict(index_cursor=self.index_cursor)
+
+    def restore(self, info):
+        if isinstance(info, dict):
+            self.index_cursor = info.get('index_cursor', 0)
+
     def internal_update(self):
         """Reset index cursor.
         """
@@ -87,7 +94,8 @@ class SequentialHdf5SelectorInspector(InspectorPage):
 
     @log_call
     def OnCursorSpin(self, event):
-        self.target.index_cursor = self.cursor_spin.GetValue()
+        if self.target:
+            self.target.index_cursor = self.cursor_spin.GetValue()
         self.target.propagate_down(UpdateEvent(None))
 
     def update(self):
