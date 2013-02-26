@@ -27,15 +27,23 @@ class SimpleHdf5TreeVisualizerNode(PipelineNode):
     OUTPUT_SPEC = []
     def __init__(self, *args, **kwargs):
         PipelineNode.__init__(self, *args, **kwargs)
-        self.node_cursor = None
+        self.node_cursor = '/'
 
     def internal_update(self):
-        self.node_cursor = None
+        """Resets node_cursor if it has become invalid.
+        """
+        if self.hdf5_data:
+            if self.hdf5_data.get(self.node_cursor):
+                return
+        # otherwise: reset node cursor
+        self.node_cursor = '/'
         debug('%s' %self.hdf5_data)
 
     @property
     @log_call
     def hdf5_data(self):
+        """Property getter for had5_data
+        """
         if self.parent:
             return self.parent.request_data(Hdf5DataSpec)
         debug('No parent.')
@@ -169,7 +177,7 @@ class SimpleHdf5TreeInspector(InspectorPage):
         self.path_text = path_text
         self.attr_grid = attr_grid
         self.vals_grid = vals_grid
-        
+
     def update(self):
         """Observer update handler.
         """
@@ -184,13 +192,15 @@ class SimpleHdf5TreeInspector(InspectorPage):
         if self.vals_grid.GetNumberCols():
             self.vals_grid.DeleteCols(0, self.vals_grid.GetNumberCols())
         # check for current node cursor of target.
-        current_path = self.target.node_cursor
         hdf5_data = self.target.hdf5_data
+        current_path = self.target.node_cursor 
         if (current_path is None) or (hdf5_data is None):
             return
+        debug('hdf5data: %s' %hdf5_data)
         # current_path and hdf5_data is valid, let's inspect it.
         self.path_text.SetValue(current_path)
         node = hdf5_data.get(current_path)
+        debug('selected node: %s' %node)
         # for node having attrs, populate attrs grid.
         if hasattr(node, 'attrs'):
             n_attrs = len(node.attrs.items())
