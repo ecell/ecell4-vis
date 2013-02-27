@@ -28,16 +28,16 @@ ec4vis.visualizer.vtk3d.page
 .. automodule:: ec4vis.visualizer.page
 
 
-ec4vis.visualizer.render_window
+ec4vis.visualizer.vtk3d.render_window
 --------------------------------------
 
-.. automodule:: ec4vis.visualizer.render_window
+.. automodule:: ec4vis.visualizer.vtk3d.render_window
 
 
-ec4vis.visualizer.visual
------------------------------
+ec4vis.visualizer.vtk3d.visual
+---------------------------------
 
-.. automodule:: ec4vis.visualizer.visual
+.. automodule:: ec4vis.visualizer.vtk3d.visual
 
 
 
