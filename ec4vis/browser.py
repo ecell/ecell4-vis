@@ -34,23 +34,23 @@ def pane_info(caption):
 class BrowserFrame(wx.Frame):
     """Browser window.
 
-    Window layout:
+    Window layout::
     
-    +------------+------------+-----------+
-    |            |            |           |
-    | (LEFT)     |            |           |
-    | Datasource |            |           |
-    | Panel      |            |           |
-    |            | (CENTER)   | (RIGHT)   |
-    +------------+ Visualizer | Inspector |
-    |            | Panel      | Panel     |
-    | (LEFT)     |            |           |
-    | Pipeline   |            |           |
-    | Panel      |            |           |
-    |            |            |           |
-    +-------------------------------------+
-    |       (BOTTOM) Console Panel        |
-    +-------------------------------------+
+      +------------+------------+-----------+
+      |            |            |           |
+      | (LEFT)     |            |           |
+      | Datasource |            |           |
+      | Panel      |            |           |
+      |            | (CENTER)   | (RIGHT)   |
+      +------------+ Visualizer | Inspector |
+      |            | Panel      | Panel     |
+      | (LEFT)     |            |           |
+      | Pipeline   |            |           |
+      | Panel      |            |           |
+      |            |            |           |
+      +------------+------------+-----------+
+      |       (BOTTOM) Console Panel        |
+      +-------------------------------------+
     
     """
     def __init__(self, *args, **kwargs):

@@ -123,6 +123,7 @@ class PipelineNode(object):
     """Represents an item in pipeline.
 
     # basic behaviour
+
     >>> node = PipelineNode()
     >>> node.CLASS_NAME
     >>> node.class_name
@@ -133,6 +134,7 @@ class PipelineNode(object):
     <PipelineNode: 'pipelinenode'>
 
     # filliality logics
+
     >>> grandparent = PipelineNode(name='grandmom')
     >>> parent = PipelineNode(name='mom')
     >>> child = PipelineNode(name='boy')
@@ -173,6 +175,7 @@ class PipelineNode(object):
     (<PipelineNode: 'grandmom'>, [])
 
     # pipeline specs
+
     >>> root = RootPipelineNode()
     >>> class LatticeSpec(PipelineSpec): pass
     >>> class SpeciesSpec(PipelineSpec): pass

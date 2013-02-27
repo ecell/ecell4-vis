@@ -1,4 +1,6 @@
 # coding: utf-8
+"""ec4vis.datasource.add_dialog --- Dialog used for 'Add Datasource' operation.
+"""
 import wx
 
 # this allows module-wise execution

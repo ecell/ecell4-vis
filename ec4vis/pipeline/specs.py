@@ -12,9 +12,11 @@ from ec4vis.pipeline import PipelineSpec
 
 
 class Hdf5DataSpec(PipelineSpec):
+    """Specifies HDF5 data.
+    """
     pass
 
 class NumberOfItemsSpec(PipelineSpec):
+    """Specifies number of items.
+    """
     pass
-
-
