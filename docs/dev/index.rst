@@ -5,11 +5,10 @@
 .. toctree::
 
    application
+   registry
    datasource
    pipeline
    inspector
-   plugins
-   registry
-   utils
    visualizer
+   plugins
 
