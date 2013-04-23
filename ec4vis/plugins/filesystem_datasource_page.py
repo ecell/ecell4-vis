@@ -1,7 +1,9 @@
 # coding: utf-8
 """ec4vis.datasource.filesystem.tree --- Tree for filesyste-based datasource.
 """
+import re
 import os # required for os.getcwd in FilesystemTree
+import glob
 import wx, wx.aui
 from wx.lib.filebrowsebutton import DirBrowseButton
 
@@ -58,10 +60,17 @@ class DefaultFileNodeProfiler(FileNodeProfilerAbstract):
     This profiler recognizes *.h5, *.hdf5 files as data files,
     directories containing *.h5 and *.hdf5 files as data bundles.
     """
+    ext_names = ['.h5', '.hdf5', '.csv']
+
+    DIRECTORY_ITEM = 0
+    DATA_BUNDLE_ITEM = 1
+    DATA_FILE_ITEM = 2
+    DATA_SET_ITEM = 3
+
     def is_data_file(self):
         if os.path.exists(self.path) and (not os.path.isdir(self.path)):
             body, ext = os.path.splitext(self.path)
-            if ext.lower() in ['.h5', '.hdf5']:
+            if ext.lower() in DefaultFileNodeProfiler.ext_names:
                 return True
         # else
         return False
@@ -74,7 +83,7 @@ class DefaultFileNodeProfiler(FileNodeProfilerAbstract):
         if os.path.exists(self.path) and os.path.isdir(self.path):
             for name in os.listdir(self.path):
                 body, ext = os.path.splitext(name)
-                if ext.lower() in ['.h5', '.hdf5']:
+                if ext.lower() in DefaultFileNodeProfiler.ext_names:
                     return True
         # else
         return False
@@ -122,16 +131,31 @@ class FilesystemTree(TreeCtrlPlus):
 
     root_path = property(get_root_path, set_root_path)
 
+    def get_parent_node_path(self, item_id):
+        parent_id = self.GetItemParent(item_id)
+        # node_name = self.GetItemText(item_id)
+        item_data = self.GetItemData(item_id).GetData()
+        node_name = item_data['text']
+        if parent_id:
+            parent_node_path = self.get_node_path(parent_id)
+            if item_data['type'] == self.file_node_profiler.DATA_SET_ITEM:
+                return parent_node_path
+            else:
+                return os.path.join(parent_node_path, node_name)
+        return node_name
+
     def get_node_path(self, item_id):
         """Resolve path of the node.
         """
         parent_id = self.GetItemParent(item_id)
+        node_name = self.GetItemText(item_id)
+        # node_name = self.GetItemData(item_id).GetData()['text']
         if parent_id:
-            parent_node_path = self.get_node_path(parent_id)
-            return os.path.join(parent_node_path, self.GetItemText(item_id))
-        return self.GetItemText(item_id)
+            parent_node_path = self.get_parent_node_path(parent_id)
+            return os.path.join(parent_node_path, node_name)
+        return node_name
 
-    def setup_folder_item(self, item_id):
+    def setup_folder_item(self, item_id, item_text):
         """Setup given tree item as a folder.
         """
         close_image_id = self.image_list_wrapper['folder_close']
@@ -139,28 +163,54 @@ class FilesystemTree(TreeCtrlPlus):
         self.SetItemHasChildren(item_id, True)
         self.SetItemImage(item_id, close_image_id, wx.TreeItemIcon_Normal)
         self.SetItemImage(item_id, open_image_id, wx.TreeItemIcon_Expanded)
+        item_data = wx.TreeItemData()
+        item_data.SetData(
+            {'text': item_text, 'type': self.file_node_profiler.DIRECTORY_ITEM})
+        self.SetItemData(item_id, item_data)
 
-    def setup_data_file_item(self, item_id):
+    def setup_data_file_item(self, item_id, item_text):
         """Setup given tree item as a data file.
         """
         data_image_id = self.image_list_wrapper['document_default']
         self.SetItemHasChildren(item_id, False)
         self.SetItemImage(item_id, data_image_id, wx.TreeItemIcon_Normal)
+        item_data = wx.TreeItemData()
+        item_data.SetData(
+            {'text': item_text, 'type': self.file_node_profiler.DATA_FILE_ITEM})
+        self.SetItemData(item_id, item_data)
 
-    def setup_data_bundle_item(self, item_id):
+    def setup_data_set_item(self, item_id, item_text):
+        """Setup given tree item as a data set.
+        """
+        data_image_id = self.image_list_wrapper['document_create']
+        # self.SetItemHasChildren(item_id, False)
+        # self.SetItemImage(item_id, data_image_id, wx.TreeItemIcon_Normal)
+        self.SetItemHasChildren(item_id, True)
+        self.SetItemImage(item_id, data_image_id, wx.TreeItemIcon_Normal)
+        self.SetItemImage(item_id, data_image_id, wx.TreeItemIcon_Expanded)
+        item_data = wx.TreeItemData()
+        item_data.SetData(
+            {'text': item_text, 'type': self.file_node_profiler.DATA_SET_ITEM})
+        self.SetItemData(item_id, item_data)
+
+    def setup_data_bundle_item(self, item_id, item_text):
         """Setup given tree item as a data bundle.
         """
         bundle_image_id = self.image_list_wrapper['draw_layer']
         self.SetItemHasChildren(item_id, True)
         self.SetItemImage(item_id, bundle_image_id, wx.TreeItemIcon_Normal)
         self.SetItemImage(item_id, bundle_image_id, wx.TreeItemIcon_Expanded)
+        item_data = wx.TreeItemData()
+        item_data.SetData(
+            {'text': item_text, 'type': self.file_node_profiler.DATA_BUNDLE_ITEM})
+        self.SetItemData(item_id, item_data)
 
     def build_root(self):
         """Build root directory.
         """
         self.DeleteAllItems()
         root_item_id = self.AddRoot(self.root_path)
-        self.setup_folder_item(root_item_id)
+        self.setup_folder_item(root_item_id, self.root_path)
         self.SetItemHasChildren(root_item_id, os.path.isdir(self.root_path))
         # Root node should always expand initially.
         self.Expand(root_item_id)
@@ -171,27 +221,62 @@ class FilesystemTree(TreeCtrlPlus):
         # If node has already some children, delete it first.
         if self.GetChildrenCount(item_id):
             self.DeleteChildren(item_id)
+
         node_path = self.get_node_path(item_id)
-        if os.path.exists(node_path)==False:
-            raise ValueError('node_path %s does not exist.' %node_path)
-        if os.path.isdir(node_path)==False:
-            return # discard silently
-        subnode_names = os.listdir(node_path)
+        node_dir_path = self.get_parent_node_path(item_id)
+        node_type = self.GetItemData(item_id).GetData()['type']
+
+        if os.path.isdir(node_path):
+            if os.path.exists(node_path) == False:
+                raise ValueError('node_path %s does not exist.' % node_path)
+            subnode_names = os.listdir(node_path)
+        else:
+            tmp = glob.glob(node_path)
+            if len(tmp) == 0:
+                return # discard silently
+            else:
+                subnode_names = [os.path.basename(fname) for fname in tmp]
+        # if os.path.exists(node_path)==False:
+        #     raise ValueError('node_path %s does not exist.' %node_path)
+        # if os.path.isdir(node_path)==False:
+        #     return # discard silently
+        # subnode_names = os.listdir(node_path)
+        subnode_names.sort()
+
+        data_sets = {}
         for subnode_name in subnode_names:
-            child_path = os.path.join(node_path, subnode_name)
+            # child_path = os.path.join(node_path, subnode_name)
+            child_path = os.path.join(node_dir_path, subnode_name)
             node_profiler = self.file_node_profiler(child_path)
+            item_data = wx.TreeItemData()
             if node_profiler.is_directory():
                 child_id = self.AppendItem(item_id, subnode_name)
-                self.setup_folder_item(child_id)
+                self.setup_folder_item(child_id, subnode_name)
             elif node_profiler.is_data_bundle():
                 child_id = self.AppendItem(item_id, subnode_name)
-                self.setup_data_bundle_item(child_id)
+                self.setup_data_bundle_item(child_id, subnode_name)
             elif node_profiler.is_data_file():
-                child_id = self.AppendItem(item_id, subnode_name)
-                self.setup_data_file_item(child_id)
+                # child_id = self.AppendItem(item_id, subnode_name)
+                # self.setup_data_file_item(child_id)
+
+                rexp = re.compile('(.+)\.\d+(\.csv)$')
+                mobj = rexp.match(subnode_name)
+                if (node_type != self.file_node_profiler.DATA_SET_ITEM
+                    and mobj is not None):
+                    set_name = mobj.group(1)
+                    if set_name in data_sets.keys():
+                        data_sets[set_name].append(subnode_name)
+                    else:
+                        data_sets[set_name] = [subnode_name]
+                        item_text = '%s.*.csv' % set_name
+                        child_id = self.AppendItem(item_id, item_text)
+                        self.setup_data_set_item(child_id, item_text)
+                else:
+                    child_id = self.AppendItem(item_id, subnode_name)
+                    self.setup_data_file_item(child_id, subnode_name)
             else:
                 pass # ignores unmatched items.
-        
+
     def OnItemCollapsed(self, evt):
         """Collapsing directory will remove all children from the tree.
         """
