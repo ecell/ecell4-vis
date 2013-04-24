@@ -23,6 +23,7 @@ class PipelineTreeItemMenu(wx.Menu):
         # populate menu items
         add_node_menu_id = self.Append(-1, "Add...")
         delete_node_menu_id = self.Append(-1, "Delete")
+        self.AppendSeparator()
         show_inspector_menu_id = self.Append(-1, "Show Inspector")
         show_visualizer_menu_id = self.Append(-1, "Show Visualizer")
         self.add_node_menu_id = add_node_menu_id
