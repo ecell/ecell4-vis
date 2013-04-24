@@ -25,14 +25,18 @@ from ec4vis.visualizer.vtk3d.visual import ActorsVisual
 class ParticleSpaceVisualizerNode(PipelineNode):
     """
     """
-    INPUT_SPEC = [ParticleSpaceSpec]
+    INPUT_SPEC = [ParticleSpaceSpec, NumberOfItemsSpec]
     OUTPUT_SPEC = []
 
     def __init__(self, *args, **kwargs):
         """Initializer.
         """
-        self._simple_visuals = []
+        # self._simple_visuals = []
         PipelineNode.__init__(self, *args, **kwargs)
+
+    @log_call
+    def fetch_particle_space(self, **kwargs):
+        return self.parent.request_data(ParticleSpaceSpec, **kwargs)
 
     @log_call
     def internal_update(self):
@@ -139,10 +143,42 @@ class ParticleSpaceVisualizer(Vtk3dVisualizerPage):
 
     @log_call
     def update(self):
-        ps = self.target.parent.request_data(ParticleSpaceSpec)
+        ps = self.target.fetch_particle_space()
         self.simple_visual.update(dict(particle_space = ps))
         self.simple_visual.enable()
         self.render()
 
 register_visualizer_page('ParticleSpaceVisualizerNode', ParticleSpaceVisualizer)
 
+class ParticleSpaceVisualizerInspector(InspectorPage):
+    """Inspector page for ParticleSpaceVisualizer.
+    """
+    def __init__(self, *args, **kwargs):
+        """Initializer.
+        """
+        InspectorPage.__init__(self, *args, **kwargs)
+
+        widgets = []
+
+        self.index_entry = wx.TextCtrl(
+            self, wx.ID_ANY, "0", style=wx.TE_PROCESS_ENTER)
+        self.max_index_text = wx.StaticText(self, -1, 'Index (0)')
+        # self.max_num_entry.Bind(wx.EVT_TEXT_ENTER, self.max_num_entry_updated)
+        widgets.extend([
+            (self.max_index_text, 0, wx.ALL | wx.EXPAND),
+            (self.index_entry, 1, wx.ALL | wx.EXPAND)])
+
+        # pack in FlexGridSizer.
+        fx_sizer = wx.FlexGridSizer(cols=2, vgap=9, hgap=25)
+        fx_sizer.AddMany(widgets)
+        fx_sizer.AddGrowableCol(1)
+        self.sizer.Add(fx_sizer, 1, wx.EXPAND | wx.ALL, 10)
+
+    @log_call
+    def update(self):
+        """Update UI.
+        """
+        max_num = self.target.parent.request_data(NumberOfItemsSpec)
+        self.max_index_text.SetLabel('Index (%d)' % max_num)
+
+register_inspector_page('ParticleSpaceVisualizerNode', ParticleSpaceVisualizerInspector)
