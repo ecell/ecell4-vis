@@ -45,28 +45,33 @@ class ParticleSpaceFilterNode(PipelineNode):
     def particle_space(self):
         """Property getter for particle_space
         """
-        if self.parent.particle_space is None:
+        particle_space = self.parent.request_data(ParticleSpaceSpec)
+
+        if particle_space is None:
             return None
 
         if self.sid_list is None:
             self.update_list()
 
-        sids = set(self.parent.particle_space.species) - set(self.ignore_list)
+        sids = set(particle_space.species) - set(self.ignore_list)
         if len(sids) == 0:
             return None
 
-        ps = ParticleSpace()
+        filtered = ParticleSpace()
         for sid in sids:
-            stride = self.parent.particle_space.num_particles(sid) // self.max_num_particles + 1
-            for pid, particle in self.parent.particle_space.list_particles(sid)[: : stride]:
-                ps.add_particle(pid, particle)
-        return ps
+            stride = particle_space.num_particles(sid) // self.max_num_particles + 1
+            for pid, particle in particle_space.list_particles(sid)[: : stride]:
+                filtered.add_particle(pid, particle)
+        return filtered
 
     def update_list(self):
         if self.sid_list:
             pass
-        elif self.parent.particle_space is not None:
-            self.sid_list = self.parent.particle_space.species # donot call self.particle_space here
+        else:
+            # donot refer self.particle_space here
+            particle_space = self.parent.request_data(ParticleSpaceSpec)
+            if particle_space is not None:
+                self.sid_list = particle_space.species
 
     @log_call
     def request_data(self, spec, **kwargs):
@@ -133,7 +138,8 @@ class ParticleSpaceFilterInspector(InspectorPage):
 
     @log_call
     def listbox_select(self, event):
-        if self.target.parent.particle_space is not None:
+        particle_space = self.target.parent.request_data(ParticleSpaceSpec)
+        if particle_space is not None:
             idx = event.GetInt()
             sid = self.listbox.GetString(idx)
             if self.listbox.IsChecked(idx):
@@ -147,24 +153,16 @@ class ParticleSpaceFilterInspector(InspectorPage):
             for child in self.target.children:
                 child.propagate_down(UpdateEvent(None))
 
-        # pattern = self.glob_pattern.GetValue()
-        # if pattern:
-        # self.target.glob_pattern = pattern
-        # self.target.internal_update()
-        # for child in self.target.children:
-        # child.propagate_down(UpdateEvent(None))
-
     @log_call
     def update(self):
         """Update UI.
         """
-        if self.target and hasattr(self.target, 'sid_list'):
-            self.target.update_list()
-            if self.target.sid_list is not None:
-                self.listbox.SetItems(self.target.sid_list)
-                for i, sid in enumerate(self.target.sid_list):
-                    if sid not in self.target.ignore_list:
-                        self.listbox.Check(i, True)
+        self.target.update_list()
+        if self.target.sid_list is not None:
+            self.listbox.SetItems(self.target.sid_list)
+            for i, sid in enumerate(self.target.sid_list):
+                if sid not in self.target.ignore_list:
+                    self.listbox.Check(i, True)
 
 register_inspector_page('ParticleSpaceFilterNode', ParticleSpaceFilterInspector)
 

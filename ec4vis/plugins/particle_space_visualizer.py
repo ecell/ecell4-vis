@@ -139,8 +139,8 @@ class ParticleSpaceVisualizer(Vtk3dVisualizerPage):
 
     @log_call
     def update(self):
-        self.simple_visual.update(
-            dict(particle_space = self.target.parent.particle_space))
+        ps = self.target.parent.request_data(ParticleSpaceSpec)
+        self.simple_visual.update(dict(particle_space = ps))
         self.simple_visual.enable()
         self.render()
 
