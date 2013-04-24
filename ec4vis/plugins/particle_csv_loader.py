@@ -17,6 +17,7 @@ except ImportError:
 
 from ec4vis.logger import debug, log_call, warning
 from ec4vis.pipeline import PipelineNode, PipelineSpec, UpdateEvent, UriSpec, register_pipeline_node
+from ec4vis.pipeline.specs import NumberOfItemsSpec
 from ec4vis.plugins.particle_space import Particle, ParticleSpace
 
 class ParticleSpaceSpec(PipelineSpec):
@@ -26,7 +27,7 @@ class ParticleCSVLoaderNode(PipelineNode):
     """Simple CSV loader.
     """
     INPUT_SPEC = [UriSpec]
-    OUTPUT_SPEC = [ParticleSpaceSpec]
+    OUTPUT_SPEC = [ParticleSpaceSpec, NumberOfItemsSpec]
 
     def __init__(self, *args, **kwargs):
         self._particle_space = None
@@ -109,7 +110,13 @@ class ParticleCSVLoaderNode(PipelineNode):
     def request_data(self, spec, **kwargs):
         """Provides particle data.
         """
-        if spec == ParticleSpaceSpec:
+        if spec == NumberOfItemsSpec:
+            debug('Serving NumberOfItemsSpec')
+            if self.particle_space is None:
+                return 0
+            else:
+                return 1
+        elif spec == ParticleSpaceSpec:
             debug('Serving ParticleSpaceSpec')
             return self.particle_space # this may be None if datasource is not valid.
         return None

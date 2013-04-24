@@ -19,19 +19,21 @@ except ImportError:
 from ec4vis.inspector.page import InspectorPage, register_inspector_page
 from ec4vis.logger import debug, log_call, warning
 from ec4vis.pipeline import PipelineNode, PipelineSpec, UpdateEvent, UriSpec, register_pipeline_node
+from ec4vis.pipeline.specs import NumberOfItemsSpec
 from ec4vis.plugins.particle_csv_loader import ParticleSpaceSpec
 from ec4vis.plugins.particle_space import Particle, ParticleSpace
 
 class ParticleSpaceFilterNode(PipelineNode):
     """ParticleSpace filter.
     """
-    INPUT_SPEC = [ParticleSpaceSpec]
-    OUTPUT_SPEC = [ParticleSpaceSpec]
+    INPUT_SPEC = [ParticleSpaceSpec, NumberOfItemsSpec]
+    OUTPUT_SPEC = [ParticleSpaceSpec, NumberOfItemsSpec]
 
     def __init__(self, *args, **kwargs):
         PipelineNode.__init__(self, *args, **kwargs)
 
         self.sid_list = None
+        self.kwargs_cache = {}
         self.ignore_list = []
         self.max_num_particles = 10000
 
@@ -41,17 +43,17 @@ class ParticleSpaceFilterNode(PipelineNode):
         """
         self.sid_list = None
 
-    @property
-    def particle_space(self):
+    def fetch_particle_space(self, **kwargs):
         """Property getter for particle_space
         """
-        particle_space = self.parent.request_data(ParticleSpaceSpec)
+        self.kwargs_cache = kwargs
+        particle_space = self.parent.request_data(ParticleSpaceSpec, **kwargs)
 
         if particle_space is None:
             return None
 
         if self.sid_list is None:
-            self.update_list()
+            self.update_list(**kwargs)
 
         sids = set(particle_space.species) - set(self.ignore_list)
         if len(sids) == 0:
@@ -64,12 +66,12 @@ class ParticleSpaceFilterNode(PipelineNode):
                 filtered.add_particle(pid, particle)
         return filtered
 
-    def update_list(self):
+    def update_list(self, **kwargs):
         if self.sid_list:
             pass
         else:
             # donot refer self.particle_space here
-            particle_space = self.parent.request_data(ParticleSpaceSpec)
+            particle_space = self.parent.request_data(ParticleSpaceSpec, **kwargs)
             if particle_space is not None:
                 self.sid_list = particle_space.species
 
@@ -77,9 +79,12 @@ class ParticleSpaceFilterNode(PipelineNode):
     def request_data(self, spec, **kwargs):
         """Provides particle data.
         """
-        if spec == ParticleSpaceSpec:
+        if spec == NumberOfItemsSpec:
+            debug('Serving NumberOfItemsSpec')
+            return self.parent.request_data(NumberOfItemsSpec, **kwargs)
+        elif spec == ParticleSpaceSpec:
             debug('Serving ParticleSpaceSpec')
-            return self.particle_space # this may be None if datasource is not valid.
+            return self.fetch_particle_space(**kwargs)
         return None
  
 
@@ -138,7 +143,8 @@ class ParticleSpaceFilterInspector(InspectorPage):
 
     @log_call
     def listbox_select(self, event):
-        particle_space = self.target.parent.request_data(ParticleSpaceSpec)
+        particle_space = self.target.parent.request_data(
+            ParticleSpaceSpec, **self.target.kwargs_cache)
         if particle_space is not None:
             idx = event.GetInt()
             sid = self.listbox.GetString(idx)
@@ -157,7 +163,7 @@ class ParticleSpaceFilterInspector(InspectorPage):
     def update(self):
         """Update UI.
         """
-        self.target.update_list()
+        self.target.update_list(**self.target.kwargs_cache)
         if self.target.sid_list is not None:
             self.listbox.SetItems(self.target.sid_list)
             for i, sid in enumerate(self.target.sid_list):
