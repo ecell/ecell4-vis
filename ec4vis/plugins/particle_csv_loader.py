@@ -74,15 +74,13 @@ class ParticleCSVLoaderNode(PipelineNode):
                         particles[sid] = [(pos, radius, pid, sid)]
             finally:
                 fin.close()
-        # return particles
         return ps
 
-    @property
-    def particle_space(self):
+    def fetch_particle_space(self, **kwargs):
         """Property getter for particle_space
         """
         # examine cache
-        uri = self.parent.request_data(UriSpec)
+        uri = self.parent.request_data(UriSpec, **kwargs)
         if not (self._uri == uri):
             self._particle_space = None
             self._uri = uri
@@ -112,13 +110,14 @@ class ParticleCSVLoaderNode(PipelineNode):
         """
         if spec == NumberOfItemsSpec:
             debug('Serving NumberOfItemsSpec')
-            if self.particle_space is None:
+            if self.fetch_particle_space(**kwargs) is None:
                 return 0
             else:
                 return 1
         elif spec == ParticleSpaceSpec:
             debug('Serving ParticleSpaceSpec')
-            return self.particle_space # this may be None if datasource is not valid.
+            # this may be None if datasource is not valid.
+            return self.fetch_particle_space(**kwargs) 
         return None
             
 
