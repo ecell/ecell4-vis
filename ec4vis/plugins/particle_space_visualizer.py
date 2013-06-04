@@ -129,7 +129,11 @@ class SimpleVisual(ActorsVisual):
             # cmap = create_color_map(len(self.particle_space.species))
             # for i, sid in enumerate(self.particle_space.species):
             #     color = cmap[i]
-            for sid, color in self.color_map.items():
+            for sid in self.particle_space.species:
+                if sid not in self.color_map.keys():
+                    continue
+                color = self.color_map[sid]
+
                 particles = self.particle_space.list_particles(sid)
                 if len(particles) == 0:
                     continue
