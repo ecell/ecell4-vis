@@ -4,6 +4,7 @@
 import wx, wx.aui
 import vtk
 import numpy
+import colorsys
 
 # this allows module-wise execution
 try:
@@ -21,32 +22,6 @@ from ec4vis.plugins.particle_csv_loader import ParticleSpaceSpec
 from ec4vis.visualizer.page import register_visualizer_page
 from ec4vis.visualizer.vtk3d.page import Vtk3dVisualizerPage
 from ec4vis.visualizer.vtk3d.visual import ActorsVisual
-
-class ParticleSpaceVisualizerNode(PipelineNode):
-    """
-    """
-    INPUT_SPEC = [ParticleSpaceSpec, NumberOfItemsSpec]
-    OUTPUT_SPEC = []
-
-    def __init__(self, *args, **kwargs):
-        """Initializer.
-        """
-        # self._simple_visuals = []
-        PipelineNode.__init__(self, *args, **kwargs)
-
-        self.view_scale = 1e-6
-
-    @log_call
-    def fetch_particle_space(self, **kwargs):
-        return self.parent.request_data(ParticleSpaceSpec, **kwargs)
-
-    @log_call
-    def internal_update(self):
-        """Reset cached particles
-        """
-        pass
-
-register_pipeline_node(ParticleSpaceVisualizerNode)
 
 # def create_axes(minpos, maxpos, **params):
 def create_axes(bounds, **params):
@@ -71,6 +46,68 @@ def create_axes(bounds, **params):
 
     return axes
 
+def get_new_color(idx):
+    if idx < 0:
+        raise ValueError
+    elif idx < 6:
+        return colorsys.hsv_to_rgb(idx / 6.0, 1.0, 1.0)
+    elif idx < 12:
+        return colorsys.hsv_to_rgb(
+            (idx - 6) / 6.0 + 1.0 / 12.0, 1.0, 1.0)
+    elif idx < 18:
+        return colorsys.hsv_to_rgb(
+            (idx - 12) / 6.0, 0.5, 1.0)
+    elif idx < 24:
+        return colorsys.hsv_to_rgb(
+            (idx - 18) / 6.0 + 1.0 / 12.0, 0.5, 1.0)
+    # else:
+    return (1, 1, 1)
+
+class ParticleSpaceVisualizerNode(PipelineNode):
+    """
+    """
+    INPUT_SPEC = [ParticleSpaceSpec, NumberOfItemsSpec]
+    OUTPUT_SPEC = []
+
+    def __init__(self, *args, **kwargs):
+        """Initializer.
+        """
+        # self._simple_visuals = []
+        PipelineNode.__init__(self, *args, **kwargs)
+
+        self.view_scale = 1e-6
+        self.sid_color_map = None
+
+    @log_call
+    def fetch_particle_space(self, **kwargs):
+        ps = self.parent.request_data(ParticleSpaceSpec, **kwargs)
+        if ps is not None:
+            self.update_list(**kwargs)
+        return ps
+
+    @log_call
+    def internal_update(self):
+        """Reset cached particles
+        """
+        # self.view_scale = 1e-6
+        # self.sid_color_map = None
+        pass
+
+    @log_call
+    def update_list(self, **kwargs):
+        ps = self.parent.request_data(ParticleSpaceSpec, **kwargs)
+        if ps is None:
+            return
+
+        if self.sid_color_map is None:
+            self.sid_color_map = {}
+
+        for sp in ps.species:
+            if sp not in self.sid_color_map.keys():
+                self.sid_color_map[sp] = get_new_color(len(self.sid_color_map))
+
+register_pipeline_node(ParticleSpaceVisualizerNode)
+
 class SimpleVisual(ActorsVisual):
 
     def __init__(self, *args, **kwargs):
@@ -78,15 +115,9 @@ class SimpleVisual(ActorsVisual):
 
         self.particle_space = None
         self.view_scale = 1e-6
+        self.color_map = {}
         self._axes = None
         self._actors_cache = {}
-
-    def create_color_map(self, num_types):
-        cmap = [(1, 0, 0), (0, 1, 0), (0, 0, 1),
-            (1, 1, 0), (1, 0, 1), (0, 1, 1), (1, 1, 1)]
-        if num_types > len(cmap):
-            cmap += [(1, 1, 1)] * (num_types - len(cmap))
-        return cmap
 
     def _get_actors(self):
         for sid, actor in self._actors_cache.items():
@@ -95,9 +126,14 @@ class SimpleVisual(ActorsVisual):
 
         if self.particle_space is not None:
             bounds = [numpy.inf, 0.0, numpy.inf, 0.0, numpy.inf, 0.0]
-            cmap = self.create_color_map(len(self.particle_space.species))
-            for i, sid in enumerate(self.particle_space.species):
+            # cmap = create_color_map(len(self.particle_space.species))
+            # for i, sid in enumerate(self.particle_space.species):
+            #     color = cmap[i]
+            for sid, color in self.color_map.items():
                 particles = self.particle_space.list_particles(sid)
+                if len(particles) == 0:
+                    continue
+
                 points = vtk.vtkPoints()
                 radius = 0.0
                 for pid, particle in particles:
@@ -121,7 +157,7 @@ class SimpleVisual(ActorsVisual):
                 mapper.SetInputConnection(poly_data.GetProducerPort())
                 actor = vtk.vtkActor()
                 actor.SetMapper(mapper)
-                actor.GetProperty().SetColor(cmap[i])
+                actor.GetProperty().SetColor(color)
                 self._actors_cache[sid] = actor
 
             self._renderer.ResetCamera(bounds)
@@ -137,6 +173,7 @@ class SimpleVisual(ActorsVisual):
     def update(self, data):
         self.particle_space = data['particle_space']
         self.view_scale = data['view_scale']
+        self.color_map = data['color_map']
 
 class ParticleSpaceVisualizer(Vtk3dVisualizerPage):
 
@@ -148,8 +185,12 @@ class ParticleSpaceVisualizer(Vtk3dVisualizerPage):
     @log_call
     def update(self):
         ps = self.target.fetch_particle_space()
+        self.target.update_list()
+
         self.simple_visual.update(
-            dict(particle_space = ps, view_scale = self.target.view_scale))
+            dict(particle_space = ps,
+                 view_scale = self.target.view_scale,
+                 color_map = self.target.sid_color_map))
         self.simple_visual.enable()
         self.render()
 
@@ -180,6 +221,20 @@ class ParticleSpaceVisualizerInspector(InspectorPage):
             (wx.StaticText(self, -1, 'Scale :'), 0, wx.ALL | wx.EXPAND),
             (self.view_scale_entry, 1, wx.ALL | wx.EXPAND)])
 
+        element_array = []
+        self.listbox = wx.CheckListBox(
+            self, wx.ID_ANY, choices=element_array,
+            style=wx.LB_HSCROLL | wx.LB_NEEDED_SB | wx.LB_SORT)
+            # style=wx.LB_MULTIPLE | wx.LB_HSCROLL | wx.LB_NEEDED_SB | wx.LB_SORT)
+        self.listbox.Bind(wx.EVT_CHECKLISTBOX, self.listbox_select)
+        self.listbox.Bind(wx.EVT_LISTBOX_DCLICK, self.doubleclick)
+        self.refresh_button = wx.Button(self, wx.ID_ANY, "Refresh")
+        self.refresh_button.Bind(wx.EVT_BUTTON, self.refresh_button_pressed)
+        widgets.extend([
+            # (wx.StaticText(self, -1, 'Species'), 0, wx.ALL | wx.EXPAND),
+            (self.refresh_button, 0, wx.ALL | wx.EXPAND),
+            (self.listbox, 1, wx.ALL | wx.EXPAND)])
+
         # pack in FlexGridSizer.
         fx_sizer = wx.FlexGridSizer(cols=2, vgap=9, hgap=25)
         fx_sizer.AddMany(widgets)
@@ -206,10 +261,49 @@ class ParticleSpaceVisualizerInspector(InspectorPage):
             self.view_scale_entry.ChangeValue(str(self.target.view_scale))
 
     @log_call
+    def refresh_button_pressed(self, event):
+        self.target.sid_color_map = None
+        self.target.update_list()
+        self.target.status_changed()
+        for child in self.target.children:
+            child.propagate_down(UpdateEvent(None))
+
+    @log_call
+    def listbox_select(self, event):
+        pass
+
+    @log_call
+    def doubleclick(self, event):
+        dlg = wx.ColourDialog(self)
+        dlg.GetColourData().SetChooseFull(True)
+        if dlg.ShowModal() == wx.ID_OK:
+            data = dlg.GetColourData()
+            idx = event.GetInt()
+            sid = self.listbox.GetString(idx)
+            self.target.sid_color_map[sid] = tuple(
+                [float(x) / 255 for x in data.GetColour().Get()])
+            self.target.status_changed()
+            for child in self.target.children:
+                child.propagate_down(UpdateEvent(None))
+        dlg.Destroy()
+
+    @log_call
     def update(self):
         """Update UI.
         """
         max_num = self.target.parent.request_data(NumberOfItemsSpec)
         self.max_index_text.SetLabel('Index (%d)' % max_num)
+
+        self.target.update_list()
+
+        if self.target.sid_color_map is not None:
+            sp_list = self.target.sid_color_map.keys()
+            sp_list.sort()
+            self.listbox.Clear()
+            self.listbox.SetItems(sp_list)
+            for i, sid in enumerate(sp_list):
+                self.listbox.Check(i, True)
+                c = tuple([int(x * 255) for x in self.target.sid_color_map[sid]])
+                self.listbox.SetItemForegroundColour(i, c)
 
 register_inspector_page('ParticleSpaceVisualizerNode', ParticleSpaceVisualizerInspector)
