@@ -86,7 +86,6 @@ class ParticleSpaceFilterNode(PipelineNode):
             debug('Serving ParticleSpaceSpec')
             return self.fetch_particle_space(**kwargs)
         return None
- 
 
 register_pipeline_node(ParticleSpaceFilterNode)
 

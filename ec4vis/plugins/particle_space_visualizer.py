@@ -34,6 +34,8 @@ class ParticleSpaceVisualizerNode(PipelineNode):
         # self._simple_visuals = []
         PipelineNode.__init__(self, *args, **kwargs)
 
+        self.view_scale = 1e-6
+
     @log_call
     def fetch_particle_space(self, **kwargs):
         return self.parent.request_data(ParticleSpaceSpec, **kwargs)
@@ -75,6 +77,7 @@ class SimpleVisual(ActorsVisual):
         ActorsVisual.__init__(self, *args, **kwargs)
 
         self.particle_space = None
+        self.view_scale = 1e-6
         self._axes = None
         self._actors_cache = {}
 
@@ -92,15 +95,15 @@ class SimpleVisual(ActorsVisual):
 
         if self.particle_space is not None:
             bounds = [numpy.inf, 0.0, numpy.inf, 0.0, numpy.inf, 0.0]
-            print self.particle_space
             cmap = self.create_color_map(len(self.particle_space.species))
             for i, sid in enumerate(self.particle_space.species):
                 particles = self.particle_space.list_particles(sid)
                 points = vtk.vtkPoints()
                 radius = 0.0
                 for pid, particle in particles:
-                    points.InsertNextPoint(numpy.asarray(particle.position) / 3e-6)
-                    radius = max(particle.radius / 3e-6, radius)
+                    points.InsertNextPoint(
+                        numpy.asarray(particle.position) / self.view_scale)
+                    radius = max(particle.radius / self.view_scale, radius)
 
                 points.ComputeBounds()
                 b = points.GetBounds()
@@ -133,6 +136,7 @@ class SimpleVisual(ActorsVisual):
 
     def update(self, data):
         self.particle_space = data['particle_space']
+        self.view_scale = data['view_scale']
 
 class ParticleSpaceVisualizer(Vtk3dVisualizerPage):
 
@@ -144,7 +148,8 @@ class ParticleSpaceVisualizer(Vtk3dVisualizerPage):
     @log_call
     def update(self):
         ps = self.target.fetch_particle_space()
-        self.simple_visual.update(dict(particle_space = ps))
+        self.simple_visual.update(
+            dict(particle_space = ps, view_scale = self.target.view_scale))
         self.simple_visual.enable()
         self.render()
 
@@ -168,11 +173,37 @@ class ParticleSpaceVisualizerInspector(InspectorPage):
             (self.max_index_text, 0, wx.ALL | wx.EXPAND),
             (self.index_entry, 1, wx.ALL | wx.EXPAND)])
 
+        self.view_scale_entry = wx.TextCtrl(
+            self, wx.ID_ANY, "1e-6", style=wx.TE_PROCESS_ENTER)
+        self.view_scale_entry.Bind(wx.EVT_TEXT_ENTER, self.view_scale_entry_updated)
+        widgets.extend([
+            (wx.StaticText(self, -1, 'Scale :'), 0, wx.ALL | wx.EXPAND),
+            (self.view_scale_entry, 1, wx.ALL | wx.EXPAND)])
+
         # pack in FlexGridSizer.
         fx_sizer = wx.FlexGridSizer(cols=2, vgap=9, hgap=25)
         fx_sizer.AddMany(widgets)
         fx_sizer.AddGrowableCol(1)
         self.sizer.Add(fx_sizer, 1, wx.EXPAND | wx.ALL, 10)
+
+    @log_call
+    def view_scale_entry_updated(self, event):
+        raw_value = self.view_scale_entry.GetValue().strip()
+        value = 0.0
+        try:
+            value = float(raw_value)
+        except ValueError:
+            value = 0.0
+
+        if value > 0:
+            self.view_scale_entry.ChangeValue(str(value))
+            self.target.view_scale = value
+            # self.target.internal_update()
+            self.target.status_changed()
+            for child in self.target.children:
+                child.propagate_down(UpdateEvent(None))
+        else:
+            self.view_scale_entry.ChangeValue(str(self.target.view_scale))
 
     @log_call
     def update(self):
