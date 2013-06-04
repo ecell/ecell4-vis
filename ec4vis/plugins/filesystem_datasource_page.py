@@ -53,7 +53,6 @@ class FileNodeProfilerAbstract(object):
         """
         return NotImplemented
 
-
 class DefaultFileNodeProfiler(FileNodeProfilerAbstract):
     """Default profiler implementation.
 
@@ -98,7 +97,35 @@ class DefaultFileNodeProfiler(FileNodeProfilerAbstract):
                 return True
         # else
         return False
-    
+
+class RoughFileNodeProfiler(FileNodeProfilerAbstract):
+    ext_names = ['.h5', '.hdf5', '.csv']
+
+    DIRECTORY_ITEM = 0
+    DATA_BUNDLE_ITEM = 1
+    DATA_FILE_ITEM = 2
+    DATA_SET_ITEM = 3
+    UNACCEPTABLE_ITEM = 4
+
+    def check_path_name(self):
+        body, ext = os.path.splitext(self.path)
+        if ext.lower() in RoughFileNodeProfiler.ext_names:
+            return RoughFileNodeProfiler.DATA_FILE_ITEM # a valid data file
+        elif ext == "":
+            return RoughFileNodeProfiler.DIRECTORY_ITEM # no ext; a directory
+        elif os.path.isdir(self.path):
+            return RoughFileNodeProfiler.DIRECTORY_ITEM
+        # else:
+        return RoughFileNodeProfiler.UNACCEPTABLE_ITEM
+
+    def is_data_file(self):
+        return (self.check_path_name() == RoughFileNodeProfiler.DATA_FILE_ITEM)
+
+    def is_data_bundle(self):
+        return False
+
+    def is_directory(self):
+        return (self.check_path_name() == RoughFileNodeProfiler.DIRECTORY_ITEM)
 
 class FilesystemTree(TreeCtrlPlus):
 
@@ -106,6 +133,7 @@ class FilesystemTree(TreeCtrlPlus):
         kwargs['style'] = wx.SUNKEN_BORDER|wx.TR_HAS_BUTTONS|kwargs.get('style', 0)
         root_path = kwargs.pop('root_path', os.getcwd())
         file_node_profiler = kwargs.pop('file_node_profiler', DefaultFileNodeProfiler)
+
         TreeCtrlPlus.__init__(self, *args, **kwargs)
         image_list_wrapper = ImageListWrapper('icons/mono16/data')
         # bindings
@@ -230,25 +258,29 @@ class FilesystemTree(TreeCtrlPlus):
             if os.path.exists(node_path) == False:
                 raise ValueError('node_path %s does not exist.' % node_path)
             subnode_names = os.listdir(node_path)
-        else:
+        elif node_type == self.file_node_profiler.DATA_SET_ITEM:
             tmp = glob.glob(node_path)
             if len(tmp) == 0:
                 return # discard silently
             else:
                 subnode_names = [os.path.basename(fname) for fname in tmp]
+        else:
+            # update TreeItem
+            return # just for special cases
+        subnode_names.sort()
+
         # if os.path.exists(node_path)==False:
         #     raise ValueError('node_path %s does not exist.' %node_path)
         # if os.path.isdir(node_path)==False:
         #     return # discard silently
         # subnode_names = os.listdir(node_path)
-        subnode_names.sort()
 
-        data_sets = {}
+        data_sets, rexp = {}, None
         for subnode_name in subnode_names:
             # child_path = os.path.join(node_path, subnode_name)
             child_path = os.path.join(node_dir_path, subnode_name)
             node_profiler = self.file_node_profiler(child_path)
-            item_data = wx.TreeItemData()
+            # item_data = wx.TreeItemData()
             if node_profiler.is_directory():
                 child_id = self.AppendItem(item_id, subnode_name)
                 self.setup_folder_item(child_id, subnode_name)
@@ -259,7 +291,8 @@ class FilesystemTree(TreeCtrlPlus):
                 # child_id = self.AppendItem(item_id, subnode_name)
                 # self.setup_data_file_item(child_id)
 
-                rexp = re.compile('(.+)\.\d+(\.csv)$')
+                if rexp is None:
+                    rexp = re.compile('(.+)\.\d+(\.csv)$')
                 mobj = rexp.match(subnode_name)
                 if (node_type != self.file_node_profiler.DATA_SET_ITEM
                     and mobj is not None):
@@ -290,15 +323,15 @@ class FilesystemTree(TreeCtrlPlus):
         item_id = evt.GetItem()
         self.build_tree(item_id)
 
-
-class FilesystemDatasourcePage(DatasourcePage):
+class FilesystemDatasourcePageBase(DatasourcePage):
     """Notebook page for filesystem based datasource.
     """
     @log_call
     def __init__(self, *args, **kwargs):
         # this will populate self.datasource
         DatasourcePage.__init__(self, *args, **kwargs)
-        tree_ctrl = FilesystemTree(self, -1)
+        # tree_ctrl = FilesystemTree(self, -1)
+        tree_ctrl = self.create_filesystem_tree()
         dir_browse_button = DirBrowseButton(
             self, -1, changeCallback=self.dir_browse_callback,
             labelText='Data Root:')
@@ -315,6 +348,9 @@ class FilesystemDatasourcePage(DatasourcePage):
         sizer.Add(tree_ctrl, 1, wx.ALL|wx.EXPAND, 0)
         self.SetSizer(sizer)
         self.Layout()
+
+    def create_filesystem_tree(self):
+        raise NotImplementedError
 
     def get_root_path(self):
         """Returns root path of the tree.
@@ -373,9 +409,32 @@ class FilesystemDatasourcePage(DatasourcePage):
             if bool(root_path) and os.path.exists(root_path):
                 self.root_path = root_path
 
-    
+class FilesystemDatasourcePage(FilesystemDatasourcePageBase):
+    """Notebook page for filesystem based datasource.
+    """
+    @log_call
+    def __init__(self, *args, **kwargs):
+        # this will populate self.datasource
+        FilesystemDatasourcePageBase.__init__(self, *args, **kwargs)
+
+    def create_filesystem_tree(self):
+        return FilesystemTree(self, -1)
+
+class RoughFilesystemDatasourcePage(FilesystemDatasourcePageBase):
+    """Notebook page for filesystem based datasource.
+    """
+    @log_call
+    def __init__(self, *args, **kwargs):
+        # this will populate self.datasource
+        FilesystemDatasourcePageBase.__init__(self, *args, **kwargs)
+
+    def create_filesystem_tree(self):
+        return FilesystemTree(
+            self, -1, file_node_profiler=RoughFileNodeProfiler)
+
 # register FilesystemDatasourcePage to datasource page registry
 register_datasource_page(FilesystemDatasourcePage)
+register_datasource_page(RoughFilesystemDatasourcePage)
 
 
 if __name__=='__main__':
