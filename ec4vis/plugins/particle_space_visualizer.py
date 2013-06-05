@@ -228,16 +228,23 @@ class ParticleSpaceVisualizerInspector(InspectorPage):
         element_array = []
         self.listbox = wx.CheckListBox(
             self, wx.ID_ANY, choices=element_array,
-            style=wx.LB_HSCROLL | wx.LB_NEEDED_SB | wx.LB_SORT)
-            # style=wx.LB_MULTIPLE | wx.LB_HSCROLL | wx.LB_NEEDED_SB | wx.LB_SORT)
+            # style=wx.LB_HSCROLL | wx.LB_NEEDED_SB | wx.LB_SORT)
+            style=wx.LB_MULTIPLE | wx.LB_HSCROLL | wx.LB_NEEDED_SB | wx.LB_SORT)
         self.listbox.Bind(wx.EVT_CHECKLISTBOX, self.listbox_select)
         self.listbox.Bind(wx.EVT_LISTBOX_DCLICK, self.doubleclick)
-        self.refresh_button = wx.Button(self, wx.ID_ANY, "Refresh")
-        self.refresh_button.Bind(wx.EVT_BUTTON, self.refresh_button_pressed)
+        # self.refresh_button = wx.Button(self, wx.ID_ANY, "Refresh")
+        # self.refresh_button.Bind(wx.EVT_BUTTON, self.refresh_button_pressed)
         widgets.extend([
-            # (wx.StaticText(self, -1, 'Species'), 0, wx.ALL | wx.EXPAND),
-            (self.refresh_button, 0, wx.ALL | wx.EXPAND),
+            (wx.StaticText(self, -1, 'Species'), 0, wx.ALL | wx.EXPAND),
+            # (self.refresh_button_pressed, 0, wx.ALL | wx.EXPAND),
             (self.listbox, 1, wx.ALL | wx.EXPAND)])
+
+        self.popupmenu = wx.Menu()
+        item1 = self.popupmenu.Append(-1, 'refresh')
+        self.listbox.Bind(wx.EVT_MENU, self.refresh_button_pressed, item1)
+        item2 = self.popupmenu.Append(-1, 'change colors')
+        self.listbox.Bind(wx.EVT_MENU, self.doubleclick, item2)
+        self.listbox.Bind(wx.EVT_RIGHT_DOWN, self.listbox_right_down)
 
         # pack in FlexGridSizer.
         fx_sizer = wx.FlexGridSizer(cols=2, vgap=9, hgap=25)
@@ -276,16 +283,24 @@ class ParticleSpaceVisualizerInspector(InspectorPage):
     def listbox_select(self, event):
         pass
 
+    def listbox_right_down(self, event):
+        self.listbox.PopupMenu(self.popupmenu, event.GetPosition())
+
     @log_call
     def doubleclick(self, event):
         dlg = wx.ColourDialog(self)
         dlg.GetColourData().SetChooseFull(True)
         if dlg.ShowModal() == wx.ID_OK:
             data = dlg.GetColourData()
-            idx = event.GetInt()
-            sid = self.listbox.GetString(idx)
-            self.target.sid_color_map[sid] = tuple(
+            newcolor = tuple(
                 [float(x) / 255 for x in data.GetColour().Get()])
+
+            # idx = event.GetInt()
+            # sid = self.listbox.GetString(idx)
+            for idx in self.listbox.GetSelections():
+                sid = self.listbox.GetString(idx)
+                self.target.sid_color_map[sid] = newcolor
+
             self.target.status_changed()
             for child in self.target.children:
                 child.propagate_down(UpdateEvent(None))
