@@ -23,6 +23,47 @@ from ec4vis.plugins.particle_space import Particle, ParticleSpace
 class ParticleSpaceSpec(PipelineSpec):
     pass
 
+def load_particles_from_csv(filename, ps=None):
+    if not os.path.isfile(filename):
+        return ps
+
+    if ps is None:
+        ps = ParticleSpace()
+
+    fin = open(filename, 'r')
+    try:
+        line = fin.readline() # skip the first line
+
+        reader = csv.reader(fin)
+        for row in reader:
+            pos = [float(column) for column in row[: 3]]
+            radius = float(row[3])
+            pid = row[4] # eval(row[4])
+            sid = row[5] # eval(row[5])
+            ps.add_particle(pid, Particle(sid, pos, radius))
+    finally:
+        fin.close()
+    return ps
+
+class ParticleCSVLoaderProgressDialog(wx.ProgressDialog):
+
+    def __init__(self, filenames):
+        wx.ProgressDialog.__init__(
+            self, "Loading ...",
+            "File remaining", len(filenames),
+            style=wx.PD_ELAPSED_TIME | wx.PD_REMAINING_TIME | wx.PD_AUTO_HIDE)
+
+        self.filenames = filenames
+
+    def Show(self):
+        ps = ParticleSpace()
+
+        for i, filename in enumerate(self.filenames):
+            ps = load_particles_from_csv(filename, ps)
+            if not self.Update(i):
+                return None
+        return ps
+
 class ParticleCSVLoaderNode(PipelineNode):
     """Simple CSV loader.
     """
@@ -41,39 +82,20 @@ class ParticleCSVLoaderNode(PipelineNode):
         self._particle_space = None
 
     def load_csv_file(self, fullpath):
-        debug("load_csv_file [%s]." % fullpath)
         rexp = re.compile('(.+)\.csv$')
         mobj = rexp.match(fullpath)
         if mobj is None:
             raise IOError, 'No suitable file.'
-        debug("load_csv_file ... start [%s]." % fullpath)
 
-        particles = {}
-        ps = ParticleSpace()
-        for filename in glob.glob(fullpath):
-            if not os.path.isfile(filename):
-                continue
-            debug("load_csv_file ... loading [%s]." % filename)
-            fin = open(filename, 'r')
-            try:
-                line = fin.readline() # skip the first line
-
-                reader = csv.reader(fin)
-                for row in reader:
-                    pos = [float(column) for column in row[: 3]]
-                    radius = float(row[3])
-                    pid = row[4] # eval(row[4])
-                    sid = row[5] # eval(row[5])
-
-                    p = Particle(sid, pos, radius)
-                    ps.add_particle(pid, p)
-
-                    if sid in particles.keys():
-                        particles[sid].append((pos, radius, pid, sid))
-                    else:
-                        particles[sid] = [(pos, radius, pid, sid)]
-            finally:
-                fin.close()
+        filenames = glob.glob(fullpath)
+        if len(filenames) > 1:
+            dialog = ParticleCSVLoaderProgressDialog(glob.glob(fullpath))
+            ps = dialog.Show()
+            dialog.Destroy()
+        elif len(filenames) == 1:
+            ps = load_particles_from_csv(filenames[0])
+        else:
+            ps = None
         return ps
 
     def fetch_particle_space(self, **kwargs):

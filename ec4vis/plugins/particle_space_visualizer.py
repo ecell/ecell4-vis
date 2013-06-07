@@ -239,11 +239,6 @@ class ParticleSpaceVisualizerInspector(InspectorPage):
             # (self.refresh_button_pressed, 0, wx.ALL | wx.EXPAND),
             (self.listbox, 1, wx.ALL | wx.EXPAND)])
 
-        self.popupmenu = wx.Menu()
-        item1 = self.popupmenu.Append(-1, 'refresh')
-        self.listbox.Bind(wx.EVT_MENU, self.refresh_button_pressed, item1)
-        item2 = self.popupmenu.Append(-1, 'change colors')
-        self.listbox.Bind(wx.EVT_MENU, self.doubleclick, item2)
         self.listbox.Bind(wx.EVT_RIGHT_DOWN, self.listbox_right_down)
 
         # pack in FlexGridSizer.
@@ -284,7 +279,14 @@ class ParticleSpaceVisualizerInspector(InspectorPage):
         pass
 
     def listbox_right_down(self, event):
-        self.listbox.PopupMenu(self.popupmenu, event.GetPosition())
+        popupmenu = wx.Menu()
+        item1 = popupmenu.Append(-1, 'refresh')
+        self.listbox.Bind(wx.EVT_MENU, self.refresh_button_pressed, item1)
+        item2 = popupmenu.Append(-1, 'change colors')
+        self.listbox.Bind(wx.EVT_MENU, self.doubleclick, item2)
+
+        self.listbox.PopupMenu(popupmenu, event.GetPosition())
+        popupmenu.Destroy()
 
     @log_call
     def doubleclick(self, event):
