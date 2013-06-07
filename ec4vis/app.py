@@ -115,6 +115,7 @@ class BrowserApp(wx.App):
         # event bindings
         pipeline_tree_ctrl.Bind(wx.EVT_TREE_SEL_CHANGED, self.OnPipelineTreeSelChanged)
         pipeline_tree_ctrl.Bind(wx.EVT_TREE_ITEM_MENU, self.OnPipelineTreeItemMenu)
+        pipeline_tree_ctrl.Bind(wx.EVT_TREE_ITEM_ACTIVATED, self.OnPipelineShowObserversMenu)
         pipeline_tree_ctrl.Bind(wx.EVT_MENU, self.OnPipelineAddNodeMenu, add_node_menu_id)
         pipeline_tree_ctrl.Bind(wx.EVT_MENU, self.OnPipelineDeleteNodeMenu, delete_node_menu_id)
         pipeline_tree_ctrl.Bind(wx.EVT_MENU, self.OnPipelineShowInspectorMenu, show_inspector_menu_id)
@@ -457,6 +458,21 @@ class BrowserApp(wx.App):
         """Called on right-click on a pipeline tree item.
         """
         self.pipeline_tree_ctrl.popup_tree_menu()
+
+    def OnPipelineShowObserversMenu(self, event):
+        selected_tree_id, selected_node = self.check_pipeline_node_selected()
+        if selected_node is None:
+            return
+        # If there are already corresponding inspector, just focus it.
+        inspector_page_index, inspector_page_instance = self.inspector_notebook.find_page_for_target(selected_node)
+        if inspector_page_index is None:
+            pipeline_node_type_name = selected_node.__class__.__name__
+            inspector_page_class = INSPECTOR_PAGE_REGISTRY.get(pipeline_node_type_name, None)
+            if inspector_page_class is not None:
+                self.OnPipelineShowInspectorMenu(event)
+            visualizer_page_class = VISUALIZER_PAGE_REGISTRY.get(pipeline_node_type_name, None)
+            if visualizer_page_class is not None:
+                self.OnPipelineShowVisualizerMenu(event)
 
 
 if __name__=='__main__':
