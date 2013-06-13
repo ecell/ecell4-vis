@@ -26,7 +26,7 @@ class WorldSizeSpec(PipelineSpec):
     pass
 
 class ParticleConstructorNode(PipelineNode):
-    """
+    """Constructs particle data from HDF5 structure.
     """
     INPUT_SPEC = [Hdf5DataSpec]
     OUTPUT_SPEC = [ParticlesSpec, SpeciesTableSpec, WorldSizeSpec]
@@ -57,7 +57,6 @@ class ParticleConstructorNode(PipelineNode):
         if self.hdf5_data is None:
             return None
         return self.hdf5_data.get('/data', None)
-        
         
     @property
     def particles(self):

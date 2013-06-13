@@ -1,4 +1,8 @@
 # coding: utf-8
+"""ec4vis.visualizer.vtk3d -- VTK based 3D renderer node.
+"""
+import numpy
+import vtk
 
 # this allows module-wise execution
 try:
@@ -17,7 +21,9 @@ class Vtk3dVisualizerNode(VisualizerNode):
 
     >>> node = Vtk3dVisualizerNode()
     >>> node
-    <Vtk3dVisualizerNode: vtk3dvisualizernode>
+    <Vtk3dVisualizerNode: 'vtk3dvisualizernode'>
+    >>> node.renderer
+    (vtkOpenGLRenderer)0x...
     
     """
     INPUT_SPEC = []
@@ -27,6 +33,15 @@ class Vtk3dVisualizerNode(VisualizerNode):
         """Initializer.
         """
         VisualizerNode.__init__(self, *args, **kwargs)
+        # setup renderer
+        self.renderer = vtk.vtkRenderer()
+        # configure background
+        self.renderer.SetBackground([0, 0, 0])
+        # configure lighting
+        light_kit = vtk.vtkLightKit()
+        light_kit.SetKeyLightIntensity(1.0)
+        light_kit.AddLightsToRenderer(self.renderer)
+
 
 
 if __name__=='__main__':
