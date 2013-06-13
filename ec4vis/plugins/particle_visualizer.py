@@ -86,7 +86,7 @@ class ParticlesVisual(ActorsVisual):
 
 
 class ParticleVisualizerNode(Vtk3dVisualizerNode):
-    """
+    """Represents a particle visualizer in pipeline.
     """
     INPUT_SPEC = [ParticlesSpec, SpeciesTableSpec, WorldSizeSpec]
     OUTPUT_SPEC = []
@@ -139,6 +139,14 @@ class ParticleVisualizerInspector(InspectorPage):
         """Sets UI up.
         """
         widgets = []
+        # offscreen controls
+        self.capture_image_button = wx.Button(
+            self, -1, label='Capture Image')
+        self.Bind(wx.EVT_BUTTON, self.OnCaptureImageButton,
+                  self.capture_image_button)
+        widgets.extend([
+            self.capture_image_button, (0, 0)])
+            
         # x/y/z controls
         for attr_name in ['Position', 'Focal point', 'View Up']:
             widgets.extend([wx.StaticText(self, -1, attr_name), (0, 0)])
@@ -189,6 +197,32 @@ class ParticleVisualizerInspector(InspectorPage):
         """Called on any status_change() on PipelineNode.
         """
         self.params_from_camera()
+        
+    @log_call
+    def OnCaptureImageButton(self, evt):
+        """Controls offscreen rendering mode
+        """
+        dlg = wx.FileDialog(
+            self, message="Save capture image as ...",
+            defaultDir=os.getcwd(),
+            defaultFile="capture.png", wildcard="PNG (*.png)|*.png|",
+            style=wx.SAVE)
+        ret = dlg.ShowModal()
+        if ret==wx.ID_OK:
+            path = dlg.GetPath()
+            try:
+                render_window = self.target.renderer.GetRenderWindow()
+                image_filter = vtk.vtkWindowToImageFilter()
+                image_writer = vtk.vtkPNGWriter()
+                image_filter.SetInput(render_window)
+                image_filter.Update()
+                image_writer.SetInputConnection(
+                    image_filter.GetOutputPort())
+                image_writer.SetFileName(path)
+                render_window.Render()
+                image_writer.Write()
+            except Exception, e:
+                debug('Import failed due to %s' %(str(e)))
         
     @log_call
     def OnCameraParameterText(self, evt):
