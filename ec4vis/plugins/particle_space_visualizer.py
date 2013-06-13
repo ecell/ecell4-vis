@@ -240,7 +240,12 @@ class ParticleSpaceVisualizerInspector(InspectorPage):
             (self.listbox, 1, wx.ALL | wx.EXPAND)])
 
         self.listbox.Bind(wx.EVT_RIGHT_DOWN, self.listbox_right_down)
-
+        
+        self.button = wx.Button(self, wx.ID_ANY, "save png")
+        widgets.extend([
+                        (self.button, 1, wx.ALL | wx.EXPAND)])
+        self.button.Bind(wx.EVT_BUTTON, self.button_click)
+        
         # pack in FlexGridSizer.
         fx_sizer = wx.FlexGridSizer(cols=2, vgap=9, hgap=25)
         fx_sizer.AddMany(widgets)
@@ -307,6 +312,19 @@ class ParticleSpaceVisualizerInspector(InspectorPage):
             for child in self.target.children:
                 child.propagate_down(UpdateEvent(None))
         dlg.Destroy()
+        
+    @log_call
+    def button_click(self, event):
+        w2if = vtk.vtkWindowToImageFilter()
+        import pdb; pdb.set_trace()
+        w2if.SetInput(self.simple_visual.render)
+        w2if.Update()
+          
+        writer = vtk.vtkPNGWriter()
+        writer.SetFileName("screenshot.png")
+        writer.SetInput(w2if.GetOutput())
+        writer.Write()
+        print "hogehoge"
 
     @log_call
     def update(self):
