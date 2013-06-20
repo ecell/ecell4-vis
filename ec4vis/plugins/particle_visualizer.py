@@ -1,6 +1,10 @@
 # coding: utf-8
 """ec4vis.plugins.particle_visualizer --- Particle visualizer.
 """
+import json
+import numpy
+import os
+
 import wx, wx.aui
 import vtk
 
@@ -18,34 +22,18 @@ from ec4vis.pipeline.specs import Hdf5DataSpec, NumberOfItemsSpec
 
 from ec4vis.plugins.particle_constructor import ParticlesSpec, SpeciesTableSpec, WorldSizeSpec
 from ec4vis.visualizer.page import register_visualizer_page
+from ec4vis.visualizer.vtk3d import Vtk3dVisualizerNode
 from ec4vis.visualizer.vtk3d.page import Vtk3dVisualizerPage
 from ec4vis.visualizer.vtk3d.visual import ActorsVisual
 
 
-class ParticleVisualizerNode(PipelineNode):
+class ParticlesVisual(ActorsVisual):
+    """Represents a group of particles.
     """
-    """
-    INPUT_SPEC = [ParticlesSpec, SpeciesTableSpec, WorldSizeSpec]
-    OUTPUT_SPEC = []
+
     def __init__(self, *args, **kwargs):
         """Initializer.
         """
-        self._particle_visuals = []
-        PipelineNode.__init__(self, *args, **kwargs)
-
-    @log_call
-    def internal_update(self):
-        """Reset cached particles
-        """
-
-        
-
-register_pipeline_node(ParticleVisualizerNode)
-
-
-class ParticlesVisual(ActorsVisual):
-
-    def __init__(self, *args, **kwargs):
         ActorsVisual.__init__(self, *args, **kwargs)
         self.world_size = None
         self.species_table = None
@@ -54,10 +42,10 @@ class ParticlesVisual(ActorsVisual):
         self._actors_cache = {}
 
     def _get_actors(self):
-        for actor in self._actors_cache.values():
-            self._renderer.RemoveActor(actor)
-            
-        if self.species_table and self.world_size and self.particles:
+        """Property getter for self.actors.
+        """
+        if (bool(self._actors_cache)==False and
+            self.species_table and self.world_size and self.particles):
             for sp_id, info in self.species_table.items():
                 name = info['name']
                 radius = info['radius']
@@ -68,39 +56,241 @@ class ParticlesVisual(ActorsVisual):
                         points.InsertNextPoint(p_info['position']*self.scaling/self.world_size)
                 poly_data = vtk.vtkPolyData()
                 poly_data.SetPoints(points)
-                source = vtk.vtkPointSource()
+                source = vtk.vtkSphereSource()
                 source.SetRadius(radius*self.scaling/self.world_size)
+                # XXX
+                # XXX There've been several PolyDataSource tries...
+                # XXX
+                # source = vtk.vtkPointSource() 
+                # source = vtk.vtkGlyphSource2D()
+                # source.SetRadius(radius*self.scaling/self.world_size)
+                # source = vtk.vtkDiskSource() 
+                # source.SetOuterRadius(radius*self.scaling/self.world_size)
+                # source.SetGlyphTypeToCircle()
+                # source.SetScale(2*radius*self.scaling/self.world_size)
                 mapper = vtk.vtkGlyph3DMapper()
                 mapper.SetSourceConnection(source.GetOutputPort())
                 mapper.SetInputConnection(poly_data.GetProducerPort())
                 actor = vtk.vtkActor()
                 actor.SetMapper(mapper)
                 self._actors_cache[sp_id] = actor
-        debug('actors: %s' %self._actors_cache)
         return self._actors_cache
 
     def update(self, data):
-        self.world_size=data['world_size']
-        self.species_table=data['species_table']
-        self.particles=data['particles']
+        for actor in self._actors_cache.values():
+            self._renderer.RemoveActor(actor)
+        self._actors_cache = {}
+        self.world_size = data['world_size']
+        self.species_table = data['species_table']
+        self.particles = data['particles']
 
+
+class ParticleVisualizerNode(Vtk3dVisualizerNode):
+    """Represents a particle visualizer in pipeline.
+    """
+    INPUT_SPEC = [ParticlesSpec, SpeciesTableSpec, WorldSizeSpec]
+    OUTPUT_SPEC = []
+    def __init__(self, *args, **kwargs):
+        """Initializer.
+        """
+        Vtk3dVisualizerNode.__init__(self, *args, **kwargs)
+        self.renderer.GetActiveCamera().ParallelProjectionOn()
+        self.particles_visual = ParticlesVisual(
+            renderer = self.renderer,
+            name = 'particles')
+
+    @log_call
+    def internal_update(self):
+        """Reset cached particles
+        """
+        self.particles_visual.update(
+            dict(world_size = self.parent.world_size,
+                 species_table = self.parent.species_table,
+                 particles = self.parent.particles))
+        self.particles_visual.enable()
+
+register_pipeline_node(ParticleVisualizerNode)
 
 
 class ParticleVisualizer(Vtk3dVisualizerPage):
-
-    def __init__(self, *args, **kwargs):
-        Vtk3dVisualizerPage.__init__(self, *args, **kwargs)
-        self.particles_visual = ParticlesVisual(
-            renderer=self.renderer,
-            name='particles')
-
+    """Visualizer.
+    """
+    @log_call
     def update(self):
-        self.particles_visual.update(
-            dict(world_size=self.target.parent.world_size,
-                 species_table=self.target.parent.species_table,
-                 particles=self.target.parent.particles))
-        self.particles_visual.enable()
+        """Updates content of the rendering window.
+
+        TODO: this method call should be handled in superclass...
+        """
         self.render()
 
 register_visualizer_page('ParticleVisualizerNode', ParticleVisualizer)
 
+
+class ParticleVisualizerInspector(InspectorPage):
+    """Inspector.
+    """
+    def __init__(self, *args, **kwargs):
+        """Initializer.
+        """
+        InspectorPage.__init__(self, *args, **kwargs)
+        self.init_ui()
+
+    def init_ui(self):
+        """Sets UI up.
+        """
+        widgets = []
+        # offscreen controls
+        self.capture_image_button = wx.Button(
+            self, -1, label='Capture Image')
+        self.Bind(wx.EVT_BUTTON, self.OnCaptureImageButton,
+                  self.capture_image_button)
+        widgets.extend([
+            self.capture_image_button, (0, 0)])
+            
+        # x/y/z controls
+        for attr_name in ['Position', 'Focal point', 'View Up']:
+            widgets.extend([wx.StaticText(self, -1, attr_name), (0, 0)])
+            for i, axis_name in enumerate(['x', 'y', 'z']):
+                prop_name = attr_name.lower().replace(' ', '_')+'_'+axis_name
+                label = wx.StaticText(self, -1, axis_name)
+                text_ctrl = wx.TextCtrl(self, -1, '', style=wx.TE_PROCESS_ENTER)
+                setattr(self, prop_name+'_text', text_ctrl)
+                widgets.extend([label, text_ctrl])
+        # parallel scale
+        self.parallel_scale_text = wx.TextCtrl(self, -1, '', style=wx.TE_PROCESS_ENTER)
+        widgets.extend([
+            wx.StaticText(self, -1, 'Scale'), self.parallel_scale_text])
+        # event bindings for text_ctrls
+        for widget in widgets:
+            if isinstance(widget, wx.TextCtrl):
+                self.Bind(wx.EVT_TEXT_ENTER, self.OnCameraParameterText, widget)
+        # import/export buttons
+        self.import_button = wx.Button(self, -1, label='Import...')
+        self.export_button = wx.Button(self, -1, label='Export...')
+        self.Bind(wx.EVT_BUTTON, self.OnImportButton, self.import_button)
+        self.Bind(wx.EVT_BUTTON, self.OnExportButton, self.export_button)
+        widgets.extend([
+            wx.StaticText(self, -1, 'Import/Export'), (0, 0),
+            self.import_button, self.export_button])
+        # pack in FlexGridSizer.
+        fx_sizer = wx.FlexGridSizer(cols=2, vgap=5, hgap=5)
+        fx_sizer.AddMany(widgets)
+        fx_sizer.AddGrowableCol(1)
+        self.sizer.Add(fx_sizer, 1, wx.EXPAND|wx.ALL, 10)
+        self.update()
+
+    def params_from_camera(self):
+        """Reflects camera parameters from current active camera.
+        """
+        camera = self.target.renderer.GetActiveCamera()
+        if camera:
+            for prefix, parameter in (
+                ('position_', camera.GetPosition()),
+                ('focal_point_', camera.GetFocalPoint()),
+                ('view_up_', camera.GetViewUp())):
+                for i, axis_name in enumerate(['x', 'y', 'z']):
+                    getattr(self, prefix+axis_name+'_text').SetValue(str(parameter[i]))
+            self.parallel_scale_text.SetValue(str(camera.GetParallelScale()))
+
+    @log_call
+    def update(self):
+        """Called on any status_change() on PipelineNode.
+        """
+        self.params_from_camera()
+        
+    @log_call
+    def OnCaptureImageButton(self, evt):
+        """Controls offscreen rendering mode
+        """
+        dlg = wx.FileDialog(
+            self, message="Save capture image as ...",
+            defaultDir=os.getcwd(),
+            defaultFile="capture.png", wildcard="PNG (*.png)|*.png|",
+            style=wx.SAVE)
+        ret = dlg.ShowModal()
+        if ret==wx.ID_OK:
+            path = dlg.GetPath()
+            try:
+                render_window = self.target.renderer.GetRenderWindow()
+                image_filter = vtk.vtkWindowToImageFilter()
+                image_writer = vtk.vtkPNGWriter()
+                image_filter.SetInput(render_window)
+                image_filter.Update()
+                image_writer.SetInputConnection(
+                    image_filter.GetOutputPort())
+                image_writer.SetFileName(path)
+                render_window.Render()
+                image_writer.Write()
+            except Exception, e:
+                debug('Import failed due to %s' %(str(e)))
+        
+    @log_call
+    def OnCameraParameterText(self, evt):
+        """Called on TextCtrl edits.
+        """
+        try:
+            camera = self.target.renderer.GetActiveCamera()
+            # x/y/z controls
+            for prefix, handler in (
+                ('position_', camera.SetPosition),
+                ('focal_point_', camera.SetFocalPoint),
+                ('view_up_', camera.SetViewUp)):
+                handler(*[
+                    float(getattr(self, prefix+axis_name+'_text').GetValue())
+                    for i, axis_name in enumerate(['x', 'y', 'z'])])
+            # parallel scale
+            camera.SetParallelScale(float(self.parallel_scale_text.GetValue()))
+            self.target.status_changed(exclude_observers=[self])
+        except Exception, e:
+            debug('OnCameraParameterText failed due to %s' %(e))
+            self.params_from_camera()
+
+    @log_call
+    def OnImportButton(self, evt):
+        """Called on Import... button
+        """
+        dlg = wx.FileDialog(
+            self, message="Open camera parameters ...", defaultDir=os.getcwd(),
+            defaultFile="camera_params.json", wildcard="Json (*.json)|*.json|")
+        ret = dlg.ShowModal()
+        if ret==wx.ID_OK:
+            path = dlg.GetPath()
+            try:
+                infile = open(path, 'r')
+                data = json.loads(infile.read())
+                infile.close()
+                camera = self.target.renderer.GetActiveCamera()
+                camera.SetPosition(data['position'])
+                camera.SetFocalPoint(data['focal_point'])
+                camera.SetViewUp(data['view_up'])
+                camera.SetParallelScale(data['parallel_scale'])
+                self.params_from_camera()
+            except Exception, e:
+                debug('Import failed due to %s' %(str(e)))
+
+    @log_call
+    def OnExportButton(self, evt):
+        """Called on Export... button
+        """
+        dlg = wx.FileDialog(
+            self, message="Save file as ...", defaultDir=os.getcwd(),
+            defaultFile="camera_params.json", wildcard="Json (*.json)|*.json|",
+            style=wx.SAVE)
+        ret = dlg.ShowModal()
+        if ret==wx.ID_OK:
+            path = dlg.GetPath()
+            try:
+                camera = self.target.renderer.GetActiveCamera()
+                data = dict(
+                    position=tuple(camera.GetPosition()),
+                    focal_point=tuple(camera.GetFocalPoint()),
+                    view_up=tuple(camera.GetViewUp()),
+                    parallel_scale=camera.GetParallelScale())
+                ofile = open(path, 'w')
+                ofile.write(json.dumps(data))
+                ofile.close()
+            except Exception, e:
+                debug('Export failed due to %s' %(str(e)))
+                
+
+register_inspector_page('ParticleVisualizerNode', ParticleVisualizerInspector)

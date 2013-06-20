@@ -19,7 +19,20 @@ from ec4vis.visualizer.vtk3d.page import Vtk3dVisualizerPage
 
 # Define node which is used as visualizer page target.
 class DemoConeVisualizerNode(Vtk3dVisualizerNode):
-    pass
+
+    def __init__(self, *args, **kwargs):
+        super(DemoConeVisualizerNode, self).__init__(*args, **kwargs)
+        self.renderer
+        source = vtk.vtkConeSource()
+        source.SetResolution(64)
+        mapper = vtk.vtkPolyDataMapper()
+        mapper.SetInput(source.GetOutput())
+        self.actor = vtk.vtkActor()
+        self.actor.SetMapper(mapper)
+        self.renderer.AddActor(self.actor)
+        self.renderer
+
+
 # Register pipleline node
 register_pipeline_node(DemoConeVisualizerNode)
 
@@ -27,22 +40,7 @@ register_pipeline_node(DemoConeVisualizerNode)
 class DemoConeVisualizerPage(Vtk3dVisualizerPage):
     """Abstract superclass for pages in a visualizer notebook.
     """
-    def __init__(self, *args, **kwargs):
-        Vtk3dVisualizerPage.__init__(self, *args, **kwargs)
-        self.actor = None
-
-    # You should extend (not override) render()
-    def render(self):
-        if self.actor is None:
-            source = vtk.vtkConeSource()
-            source.SetResolution(64)
-            mapper = vtk.vtkPolyDataMapper()
-            mapper.SetInput(source.GetOutput())
-            self.actor = vtk.vtkActor()
-            self.actor.SetMapper(mapper)
-            self.renderer.AddActor(self.actor)
-            self.renderer.Render()
-        Vtk3dVisualizerPage.render(self)
+    pass
         
 # Register visualizer page to registry.
 register_visualizer_page('DemoConeVisualizerNode', DemoConeVisualizerPage)

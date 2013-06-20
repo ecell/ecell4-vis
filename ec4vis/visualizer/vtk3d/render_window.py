@@ -7,77 +7,74 @@ import vtk
 import wx
 
 from wxVTKRenderWindowInteractor import wxVTKRenderWindowInteractor
+from ec4vis.logger import debug, log_call, warning
 
 
-class RenderWindowPanel(wx.Panel):
+class RenderWindowMixin(object):
+    
     """A panel containing wxVTKRenderWindowInteractor.
-
-    Attributes:
-    render_window --- wxVTKRenderWindowInteractor instance.
-    aspect_ratio --- aspect ratio of render_window. (w, h)-tuple.
-
     """
     def __init__(self, *args, **kwargs):
         """Initializer.
         """
-        # extract aspect ratio, defaulting 4:3.
-        self._aspect_ratio = kwargs.pop('aspect_ratio', (4, 3))
-        super(RenderWindowPanel, self).__init__(*args, **kwargs)
-        render_window = wxVTKRenderWindowInteractor(self, -1)
-        # binding
-        self.render_window = render_window
+        self._aspect_ratio = kwargs.get('aspect_ratio', (4, 3))
+        self.render_window = wxVTKRenderWindowInteractor(self, -1)
+        # disable widget (to avoid rendering)
+        self.render_window.Enable(False)
+        # Hook exit event.
+        self.render_window.AddObserver('ExitEvent', self.ObserverExitEventHandler)
+        self.renderers = []
         # events
         self.Bind(wx.EVT_SIZE, self.OnSize)
-        self.setup_renderer()
-        settings = kwargs.get('settings', None)
-        if settings:
-            self.configure_renderer(settings)
+        # set up the window
 
+    def ObserverExitEventHandler(self, observer, event, fromobj):
+        fromobj.Close()
+        
+    def finalize(self):
+        """Finalizer.
+        """
+        # stop interaction
+        self.render_window.Enable(False)
+        # purge all renderer from the window.
+        for renderer in self.renderers:
+            self.render_window.GetRenderWindow().RemoveRenderer(renderer)
+        
     def _get_aspect_ratio(self):
+        """Property getter for aspect_ratio.
+        """
         return self._aspect_ratio
 
     def _set_aspect_ratio(self, aspect_ratio):
+        """Property setter for aspect_ratio.
+        """
         self._aspect_ratio = aspect_ratio
         self.force_aspect_ratio(*self.GetSize())
 
     aspect_ratio = property(_get_aspect_ratio, _set_aspect_ratio)
 
-    def configure_renderer(self, settings):
-        """Configure rendering environment.
+    def add_renderer(self, renderer):
+        """Register and add a renderer to the window.
         """
-        renderer = self.renderer
-        # configure camera
-        camera = renderer.GetActiveCamera()
-        camera.SetFocalPoint(
-            numpy.array(settings.camera_focal_point)*settings.scaling)
-        camera.SetPosition(
-            numpy.array(settings.camera_base_position)*settings.scaling)
-        camera.Azimuth(settings.camera_azimuth)
-        camera.Elevation(settings.camera_elevation)
-        camera.SetViewAngle(settings.camera_view_angle)
-        camera.SetParallelProjection(settings.camera_parallel_projection)
-        camera.Zoom(settings.camera_zoom)
-        # configure background
-        renderer.SetBackground(settings.image_background_color)
-        # configure lighting
-        light_kit = vtk.vtkLightKit()
-        light_kit.SetKeyLightIntensity(settings.light_intensity)
-        light_kit.AddLightsToRenderer(renderer)
-
-    def setup_renderer(self):
-        """Set up vtk renderers.
-        """
-        # Enable rendering
-        self.render_window.Enable(1)
-        # Hook exit event.
-        self.render_window.AddObserver(
-            'ExitEvent', lambda o,e,f=self: f.Close())
-        # create renderer
-        renderer = vtk.vtkRenderer()
-        renderer.SetViewport(0.0, 0.0, 1.0, 1.0)
         # Register renderer
-        self.render_window.GetRenderWindow().AddRenderer(renderer)
-        self.renderer = renderer
+        if renderer not in self.renderers:
+            self.renderers.append(renderer)
+            self.render_window.GetRenderWindow().AddRenderer(renderer)
+        if self.renderers:
+            # Enable widget.
+            self.render_window.Enable(True)
+
+    def remove_renderer(self, renderer):
+        """Unregister and remove specified renderer from the window.
+        """
+        # Disable widget first.
+        self.render_window.Enable(False)
+        if renderer not in self.renderers:
+            self.renderers.remove(renderer)
+            self.render_window.GetRenderWindow().RemoveRenderer(renderer)
+        if self.renderers:
+            # Enable widget again
+            self.render_window.Enable(True)
 
     def force_aspect_ratio(self, width, height):
         """
@@ -97,6 +94,32 @@ class RenderWindowPanel(wx.Panel):
         """Resize handler.
         """
         self.force_aspect_ratio(*event.GetSize())
+
+    def render(self):
+        """Do real rendering action.
+        """
+        self.render_window.Render()
+
+    @log_call
+    def update(self):
+        """Updates content of the rendering window.
+        """
+        self.render()
+
+
+class RenderWindowPanel(wx.Panel, RenderWindowMixin):
+    """Mixin for panel containing wxVTKRenderWindowInteractor.
+
+    Attributes:
+    aspect_ratio --- aspect ratio of render_window. (w, h)-tuple.
+
+    """
+    def __init__(self, *args, **kwargs):
+        # mixin should be call after any widget's __init__.
+        # extract aspect ratio, defaulting 4:3.
+        aspect_ratio = kwargs.pop('aspect_ratio', (4, 3))
+        super(RenderWindowPanel, self).__init__(*args, **kwargs)
+        RenderWindowMixin.__init__(self, aspect_ratio=aspect_ratio)
 
 
 if __name__=='__main__':
@@ -123,8 +146,9 @@ if __name__=='__main__':
             frame.SetSizer(sizer)
             frame.Layout()
             frame.Show(True)
+            self.render_window_panel = render_window_panel
             self.SetTopWindow(frame)
-            renderer = render_window_panel.renderer
+            renderer = vtk.vtkRenderer()
             # stuff to be rendererd
             source = vtk.vtkConeSource()
             source.SetResolution(8)
@@ -133,6 +157,7 @@ if __name__=='__main__':
             actor = vtk.vtkActor()
             actor.SetMapper(mapper)
             renderer.AddActor(actor)
+            render_window_panel.add_renderer(renderer)
             return True
 
     app = DemoApp(0)
