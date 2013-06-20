@@ -1,12 +1,11 @@
 ==================
-インストール
+installation
 ==================
 
-依存モジュールのインストール
+To run ecell4-vis, you have to install these dependencies.
+
+dependencies (Ubuntu Linux)
 ==================================
-
-ec4vis を動作させるには、以下のソフトウェアをインストールしておく必要があります:
-
 
 - Python
 - wxPython
@@ -21,3 +20,19 @@ ec4vis を動作させるには、以下のソフトウェアをインストー�
     # apt-get install python-h5py
     # apt-get install python-vtk
 
+dependencies (Mac OSX) 
+============================
+
+- homebrew
+  - wxmac
+  - numpy
+  - h5py
+  - vtk(you need to tap homebrew science)
+
+::
+    $ brew install wxmac
+    $ brew tap homebrew/science
+    $ brew install vtk --with-python
+    $ sudo easy_install pip
+    $ pip install numpy --user
+    $ pip install h5py --user
