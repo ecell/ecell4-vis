@@ -36,6 +36,11 @@ dependencies (Mac OSX)
    $ brew install wxmac
    $ brew tap homebrew/science
    $ brew install vtk
-   $ sudo easy_install pip
-   $ pip install numpy --user
-   $ pip install h5py --user
+
+Running ecell4-vis
+=========================
+
+::
+
+   $ cd ecell4-vis
+   $ PYTHONPATH=/usr/local/lib/python2.7/site-packages python ec4vis/app.py
