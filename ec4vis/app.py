@@ -91,7 +91,12 @@ class BrowserApp(wx.App):
         self.init_visualizer_panel()
         # assign and show top window
         self.SetTopWindow(self.browser)
+        self.browser.Bind(wx.EVT_CLOSE, self.catch_event_close)
         self.browser.Show(True)
+
+    def catch_event_close(self, *args):
+        debug('wx.EVT_CLOSE catched.')
+        self.ExitMainLoop()
 
     def init_browser(self):
         """Initializes browser frame.
