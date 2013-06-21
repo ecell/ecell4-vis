@@ -25,6 +25,7 @@ dependencies (Mac OSX)
 ============================
 
 - homebrew
+
   - wxmac
   - numpy
   - h5py
