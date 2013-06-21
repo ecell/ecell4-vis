@@ -37,7 +37,8 @@ class Vtk3dVisualizerPage(VisualizerPage, RenderWindowMixin):
             self.render_window.Enable(True)
 
     def ObserverRenderEventHandler(self, observer, event, fromobj=None):
-        self.target.status_changed(exclude_observers=[self])
+        # self.target.status_changed(exclude_observers=[self])
+        self.target.update_observers(exclude_observers=[self])
 
     def finalize(self):
         """Finalize page, visualizer

@@ -403,6 +403,9 @@ class PipelineNode(object):
         """Notifies status change (to observers).
         """
         self.internal_update()
+        self.update_observers(exclude_observers)
+
+    def update_observers(self, exclude_observers=()):
         for observer in self.observers:
             if observer not in exclude_observers:
                 observer.update()

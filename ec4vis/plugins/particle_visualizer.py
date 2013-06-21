@@ -192,7 +192,7 @@ class ParticleVisualizerInspector(InspectorPage):
                     getattr(self, prefix+axis_name+'_text').SetValue(str(parameter[i]))
             self.parallel_scale_text.SetValue(str(camera.GetParallelScale()))
 
-    @log_call
+    #@log_call
     def update(self):
         """Called on any status_change() on PipelineNode.
         """
