@@ -14,11 +14,12 @@ dependencies (Ubuntu Linux)
 - vtk
 
 ::
-    # apt-get update
-    # apt-get install python-wxgtk2.8
-    # apt-get install python-numpy
-    # apt-get install python-h5py
-    # apt-get install python-vtk
+
+   # apt-get update
+   # apt-get install python-wxgtk2.8
+   # apt-get install python-numpy
+   # apt-get install python-h5py
+   # apt-get install python-vtk
 
 dependencies (Mac OSX) 
 ============================
@@ -30,9 +31,10 @@ dependencies (Mac OSX)
   - vtk(you need to tap homebrew science)
 
 ::
-    $ brew install wxmac
-    $ brew tap homebrew/science
-    $ brew install vtk --with-python
-    $ sudo easy_install pip
-    $ pip install numpy --user
-    $ pip install h5py --user
+
+   $ brew install wxmac
+   $ brew tap homebrew/science
+   $ brew install vtk
+   $ sudo easy_install pip
+   $ pip install numpy --user
+   $ pip install h5py --user
