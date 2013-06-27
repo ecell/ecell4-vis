@@ -21,9 +21,10 @@ class SpatiocyteLogReader:
     def isEnd(self):
         return self.tell() == self.footerSeek
 
-    """ corresponding to VisualizationLogProcess::initializeLog()
-    """
     def readInitialization(self):
+        '''
+        corresponding to VisualizationLogProcess::initializeLog()
+        '''
         self.readHeader()
         self.readLatticeSpecies()
         self.readPolymerSpecies()
@@ -46,7 +47,7 @@ class SpatiocyteLogReader:
         data['theOffLatticeSpSize'] = struct.unpack('I', self.logfile.read(4))[0]
         data['theLogMarker'] = struct.unpack('I', self.logfile.read(4))[0]
         data['aVoxelRadius'] = struct.unpack('d', self.logfile.read(8))[0]
-        """
+        '''
         header_format = '<IIIIIIdddIIIIId'
         header_titles = ['aLatticeType', 'theMeanCount', 'aStartCoord',
                 'aRowSize', 'aLayerSize', 'aColSize', 'aRealRowSize',
@@ -55,8 +56,11 @@ class SpatiocyteLogReader:
                 'theLogMarker', 'aVoxelRadius']
         read = struct.unpack(header_format,f.read(4*19))
         print read
-        """
+        '''
         self.header = data
+
+    def getHeader(self):
+        return self.header;
 
 
     def readLatticeSpecies(self):
@@ -67,11 +71,11 @@ class SpatiocyteLogReader:
             aString = struct.unpack('s' + str(aStringSize),
                     self.logfile.read(aStringSize))[0]
             aRadius = struct.unpack('d', self.logfile.read(8))[0]
-            """
+            '''
             print 'aStringSize + 8 = ' + str(aStringSize + 8)
             (aString, aRadius) = struct.unpack('s' + str(aStringSize) + 'd',
                     self.logfile.read(aStringSize + 8))
-            """
+            '''
             species[aString] = aRadius;
 
         self.latticeSpecies = species
@@ -95,9 +99,10 @@ class SpatiocyteLogReader:
         return species
 
 
-    """ corresponding to VisualizationLogProces::logCompVacant()
-    """
     def readCompVacant(self):
+        '''
+        corresponding to VisualizationLogProces::logCompVacant()
+        '''
         data = {}
         aCurrentTime = struct.unpack('d', self.logfile.read(8))[0]
         i = 0
@@ -127,9 +132,10 @@ class SpatiocyteLogReader:
         return data
 
 
-    """ corresponding to VisualizationLogProcess::logSpecies()
-    """
     def readSpecies(self):
+        '''
+        corresponding to VisualizationLogProcess::logSpecies()
+        '''
         data = {}
 
         aCurrentTime = struct.unpack('d', self.logfile.read(8))[0]
@@ -224,9 +230,10 @@ class SpatiocyteLogReader:
         return self.readSpecies()
 
 
-    """ read aSpecies->getCoord(i) i(0:aSpecies->size())
-    """
     def readMolecules(self):
+        '''
+        read aSpecies->getCoord(i) i(0:aSpecies->size())
+        '''
         molecules = {}
         (index, size) = struct.unpack('ii', self.logfile.read(8));
         molecules['index'] = index
@@ -243,9 +250,10 @@ class SpatiocyteLogReader:
         self.logfile.seek(4*size,1)
 
 
-    """ read aSpecies->getSourceCoords()
-    """
     def readSourceMolecules(self):
+        '''
+        read aSpecies->getSourceCoords()
+        '''
         data = {}
         (aSourceIndex, aSize) = struct.unpack('ii', self.logfile.read(8))
         data['index'] = aSourceIndex
@@ -262,9 +270,10 @@ class SpatiocyteLogReader:
         self.logfile.seek(4*size)
 
 
-    """ read aSpecies->getTargetCoords()
-    """
     def readTargetMolecules(self):
+        '''
+        read aSpecies->getTargetCoords()
+        '''
         data = {}
         (aTargetIndex, aSize) = struct.unpack('ii', self.logfile.read(8))
         data['index'] = aTargetIndex
@@ -281,9 +290,10 @@ class SpatiocyteLogReader:
         self.logfile.seek(4*size)
 
 
-    """ read aSpecies->getSharedCoords()
-    """
     def readSharedMolecules(self):
+        '''
+        read aSpecies->getSharedCoords()
+        '''
         data = {}
         (aSharedIndex, aSize) = struct.unpack('ii', self.logfile.read(8))
         data['index'] = aSharedIndex
@@ -299,9 +309,10 @@ class SpatiocyteLogReader:
         self.logfile.seek(4*size)
 
 
-    """ read aSpecies->getPoint(i) i(0:aSpecies->size())
-    """
     def readPolymers(self):
+        '''
+        read aSpecies->getPoint(i) i(0:aSpecies->size())
+        '''
         data = {}
         (anIndex, aSize) = struct.unpack('ii', self.logfile.read(8))
         data['index'] = anIndex
@@ -317,10 +328,11 @@ class SpatiocyteLogReader:
         self.logfile.seek(24*size)
 
 
-    """ read aSpecies->getPoint(i)
-         or  aSpecies->getMultiscaleStructurePoint(i) i(0:aSpecies->size())
-    """
     def readOffLattice(self):
+        '''
+        read aSpecies->getPoint(i)
+        or  aSpecies->getMultiscaleStructurePoint(i) i(0:aSpecies->size())
+        '''
         data = {}
         (anIndex, aSize) = struct.unpack('ii', self.logfile.read(8))
         data['index'] = anIndex
@@ -336,9 +348,10 @@ class SpatiocyteLogReader:
         self.logfile.seek(24*size)
 
 
-""" main function
-"""
 def main():
+    '''
+    main function
+    '''
     name = 'VisualLog.dat'
     reader = SpatiocyteLogReader(name)
 
