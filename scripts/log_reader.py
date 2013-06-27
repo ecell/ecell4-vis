@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # coding: utf-8
 
 import struct
@@ -30,6 +29,7 @@ class SpatiocyteLogReader:
         self.readHeader()
         self.readLatticeSpecies()
         self.readPolymerSpecies()
+        self.readOffLatticeSpecies()
 
 
     def readHeader(self):
@@ -56,8 +56,7 @@ class SpatiocyteLogReader:
                 'aRealLayerSize', 'aRealColSize', 'theLatticeSpSize',
                 'thePolymerSize', 'aResersvedSize', 'theOffLatticeSpSize',
                 'theLogMarker', 'aVoxelRadius']
-        read = struct.unpack(header_format,f.read(4*19))
-        print read
+        data = struct.unpack(header_format,f.read(4*19))
         '''
         self.header = data
 
@@ -73,14 +72,9 @@ class SpatiocyteLogReader:
             aString = struct.unpack('s' + str(aStringSize),
                     self.logfile.read(aStringSize))[0]
             aRadius = struct.unpack('d', self.logfile.read(8))[0]
-            '''
-            print 'aStringSize + 8 = ' + str(aStringSize + 8)
-            (aString, aRadius) = struct.unpack('s' + str(aStringSize) + 'd',
-                    self.logfile.read(aStringSize + 8))
-            '''
             species[aString] = aRadius;
 
-        self.latticeSpecies = species
+        self.header['latticeSpecies'] = species
 
 
     def readPolymerSpecies(self):
@@ -90,15 +84,19 @@ class SpatiocyteLogReader:
             aRadius = struct.unpack('d', self.logfile.read(8))[0]
             species.append(aRadius)
 
-        self.polymerSpecies = species
+        self.header['polymerSpecies'] = species
 
 
     def readOffLatticeSpecies(self):
-        species = []
-        for i in range(size):
+        species = {}
+        for i in range(self.header['theOffLatticeSpSize']):
+            aStringSize = struct.unpack('I', self.logfile.read(4)[0])
+            aString = struct.unpack('s' + str(aStringSize),
+                    self.logfile.read(aStringSize))[0]
             aRadius = struct.unpack('d', logfile.read(8))[0]
-            species.append(aRadius)
-        return species
+            species[aString] = aRadius
+
+        self.header['offLatticeSpecies'] = species
 
 
     def readCompVacant(self):
@@ -111,7 +109,6 @@ class SpatiocyteLogReader:
         data['Coords'] = {}
         for index in range(self.header['theLatticeSpSize']+1):
             i = struct.unpack('I', self.logfile.read(4))[0]
-            #print 'Coords:',i,'\n'
             if i == self.header['theLogMarker']:
                 break
             aSize = struct.unpack('i', self.logfile.read(4))[0]
@@ -122,7 +119,6 @@ class SpatiocyteLogReader:
         data['Points'] = {}
         for index in range(self.header['theOffLatticeSpSize']+1):
             i = struct.unpack('I', self.logfile.read(4))[0]
-            #print 'Points:',i,'\n'
             if i == self.header['theLogMarker']:
                 break
             aSize = struct.unpack('i', self.logfile.read(4))[0]
@@ -130,8 +126,8 @@ class SpatiocyteLogReader:
             for j in range(aSize):
                 (x, y, z) = struct.unpack('ddd', self.logfile.read(8*3))
                 data['Points'][i].append({'x':x, 'y':y, 'z':z})
-        self.compVacant = data
-        return data
+
+        self.header['compVacant'] = data
 
 
     def readSpecies(self):
@@ -239,10 +235,10 @@ class SpatiocyteLogReader:
         molecules = {}
         (index, size) = struct.unpack('ii', self.logfile.read(8));
         molecules['index'] = index
-        molecules['aCoords'] = []
+        molecules['Coords'] = []
         for i in range(size):
             aCoord = struct.unpack('I', self.logfile.read(4))[0];
-            molecules['aCoords'].append(aCoord);
+            molecules['Coords'].append(aCoord);
         return molecules
 
 
@@ -259,10 +255,10 @@ class SpatiocyteLogReader:
         data = {}
         (aSourceIndex, aSize) = struct.unpack('ii', self.logfile.read(8))
         data['index'] = aSourceIndex
-        data['aCoords'] = []
+        data['Coords'] = []
         for i in range(aSize):
             aCoord = struct.unpack('I', self.logfile.read(4))[0]
-            data['aCoords'].append(aCoord)
+            data['Coords'].append(aCoord)
         return data
 
 
@@ -279,10 +275,10 @@ class SpatiocyteLogReader:
         data = {}
         (aTargetIndex, aSize) = struct.unpack('ii', self.logfile.read(8))
         data['index'] = aTargetIndex
-        data['aCoords'] = []
+        data['Coords'] = []
         for i in range(aSize):
             aCoord = struct.unpack('I', self.logfile.read(4))[0]
-            data['aCoords'].append(aCoord)
+            data['Coords'].append(aCoord)
         return data
 
 
@@ -299,10 +295,10 @@ class SpatiocyteLogReader:
         data = {}
         (aSharedIndex, aSize) = struct.unpack('ii', self.logfile.read(8))
         data['index'] = aSharedIndex
-        data['aCoords'] = []
+        data['Coords'] = []
         for i in range(aSize):
             aCoord = struct.unpack('I', self.logfile.read(4))[0]
-            data['aCoords'].append(aCoord)
+            data['Coords'].append(aCoord)
         return data
 
     def skipSharedMolecules(self):

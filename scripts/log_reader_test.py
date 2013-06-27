@@ -13,15 +13,6 @@ def main():
     header = reader.header
     print '[header]\t',header
 
-    latticeSpecies = reader.latticeSpecies
-    print '[latticeSpecies]\t',latticeSpecies
-
-    polymerSpecies = reader.polymerSpecies
-    print '[polymerSpecies]\t',polymerSpecies
-
-    compVacant = reader.compVacant
-    print '[compVacant]',compVacant
-
     while not reader.isEnd() :
         reader.skipSpecies()
         #species = reader.readSpecies()
