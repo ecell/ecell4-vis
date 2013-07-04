@@ -14,8 +14,7 @@ try:
     import ec4vis
 except ImportError:
     import sys, os
-    #p = os.path.abspath(__file__); sys.path.insert(0, p[: p.rindex(os.sep + 'ec4vis')])
-    sys.path.insert(0, '/home/kato/wrk/ecell4-vis')
+    p = os.path.abspath(__file__); sys.path.insert(0, p[: p.rindex(os.sep + 'ec4vis')])
 
 from ec4vis.logger import debug, log_call, warning
 from ec4vis.pipeline import PipelineNode, PipelineSpec, UpdateEvent, UriSpec, register_pipeline_node

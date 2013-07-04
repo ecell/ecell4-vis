@@ -68,7 +68,7 @@ class PipelineSpecMetaClass(type):
 
     >>> PipelineSpec
     <PipelineSpec>
-    
+
     """
     def __repr__(self):
         """Simply returns classname in triangle brakets.
