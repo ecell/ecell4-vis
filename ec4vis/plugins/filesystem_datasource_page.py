@@ -25,7 +25,7 @@ class FileNodeProfilerAbstract(object):
 
     The file node profiler accepts file path and examines if given
     path points valid data file, data bundle, directory or otherwise.
-    
+
     """
     def __init__(self, path):
         """Initializer.
@@ -59,7 +59,7 @@ class DefaultFileNodeProfiler(FileNodeProfilerAbstract):
     This profiler recognizes *.h5, *.hdf5 files as data files,
     directories containing *.h5 and *.hdf5 files as data bundles.
     """
-    ext_names = ['.h5', '.hdf5', '.csv']
+    ext_names = ['.h5', '.hdf5', '.csv', '.dat']
 
     DIRECTORY_ITEM = 0
     DATA_BUNDLE_ITEM = 1
@@ -99,7 +99,7 @@ class DefaultFileNodeProfiler(FileNodeProfilerAbstract):
         return False
 
 class RoughFileNodeProfiler(FileNodeProfilerAbstract):
-    ext_names = ['.h5', '.hdf5', '.csv']
+    ext_names = ['.h5', '.hdf5', '.csv', '.dat']
 
     DIRECTORY_ITEM = 0
     DATA_BUNDLE_ITEM = 1
