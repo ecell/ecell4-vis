@@ -83,7 +83,7 @@ class ParticlesVisual(ActorsVisual):
         self._actors_cache.clear()
 
         if self.particle_space is not None:
-            bounds = [numpy.inf, 0.0, numpy.inf, 0.0, numpy.inf, 0.0]
+            # bounds = [numpy.inf, 0.0, numpy.inf, 0.0, numpy.inf, 0.0]
             # cmap = create_color_map(len(self.particle_space.species))
             # for i, sid in enumerate(self.particle_space.species):
             #     color = cmap[i]
@@ -105,10 +105,10 @@ class ParticlesVisual(ActorsVisual):
 
                 points.ComputeBounds()
                 b = points.GetBounds()
-                bounds = [
-                    min(bounds[0], b[0]), max(bounds[1], b[1]),
-                    min(bounds[2], b[2]), max(bounds[3], b[3]),
-                    min(bounds[4], b[4]), max(bounds[5], b[5])]
+                # bounds = [
+                #     min(bounds[0], b[0]), max(bounds[1], b[1]),
+                #     min(bounds[2], b[2]), max(bounds[3], b[3]),
+                #     min(bounds[4], b[4]), max(bounds[5], b[5])]
 
                 poly_data = vtk.vtkPolyData()
                 poly_data.SetPoints(points)
@@ -126,15 +126,34 @@ class ParticlesVisual(ActorsVisual):
                 actor.GetProperty().SetColor(color)
                 self._actors_cache[sid] = actor
 
-            # self._renderer.ResetCamera(bounds)
-            # if self._axes is not None:
-            #     self._renderer.RemoveViewProp(self._axes)
-            # self._axes = create_axes(bounds)
-            # self._axes.SetCamera(self._renderer.GetActiveCamera())
-            # self._renderer.AddViewProp(self._axes)
-
         debug('actors: %s' % self._actors_cache)
         return self._actors_cache
+
+    def get_bounds(self):
+        if self.particle_space is not None:
+            bounds = [numpy.inf, 0.0, numpy.inf, 0.0, numpy.inf, 0.0]
+            for sid in self.particle_space.species:
+                if sid not in self.color_map.keys():
+                    continue
+
+                particles = self.particle_space.list_particles(sid)
+                if len(particles) == 0:
+                    continue
+
+                points = vtk.vtkPoints()
+                for pid, particle in particles:
+                    points.InsertNextPoint(
+                        numpy.asarray(particle.position) / self.view_scale)
+
+                points.ComputeBounds()
+                b = points.GetBounds()
+                bounds = [
+                    min(bounds[0], b[0]), max(bounds[1], b[1]),
+                    min(bounds[2], b[2]), max(bounds[3], b[3]),
+                    min(bounds[4], b[4]), max(bounds[5], b[5])]
+            return bounds
+        else:
+            return None
 
     def reset_actors(self, data):
         for actor in self._actors_cache.values():
@@ -175,6 +194,15 @@ class ParticleSpaceVisualizerNode(Vtk3dVisualizerNode):
                  view_scale = self.view_scale,
                  color_map = self.sid_color_map))
         self.particles_visual.enable()
+
+        bounds = self.particles_visual.get_bounds()
+        if bounds is not None:
+            self.renderer.ResetCamera(bounds)
+            if self._axes is not None:
+                self._renderer.RemoveViewProp(self._axes)
+            self._axes = create_axes(bounds)
+            self._axes.SetCamera(self._renderer.GetActiveCamera())
+            self._renderer.AddViewProp(self._axes)
 
     @log_call
     def fetch_particle_space(self, **kwargs):
