@@ -7,6 +7,7 @@ import re
 import glob
 from urlparse import urlparse
 import wx, wx.aui
+import numpy
 
 # this allows module-wise execution
 try:
@@ -23,8 +24,7 @@ from ec4vis.plugins.particle_space import Particle, ParticleSpace
 #from lattice_space import LatticeParticle, LatticeParticleSpace
 from spatiocyte_tools import coord2point
 
-class ParticleSpaceSpec(PipelineSpec):
-    pass
+from ec4vis.plugins.particle_csv_loader import ParticleSpaceSpec
 
 def load_particles_from_spatiocyte(filename, index=0, ps=None):
     if not os.path.isfile(filename):
@@ -48,7 +48,8 @@ def load_particles_from_spatiocyte(filename, index=0, ps=None):
             (string, radius) = lspecies[sid]
             for coord in sp['Coords']:
                 pos = coord2point(coord, row_size, layer_size)
-                ps.add_particle(pid, Particle(sid, pos, radius))
+                pos = numpy.array(pos) * 2 * header['aVoxelRadius']
+                ps.add_particle(pid, Particle(string, pos, radius))
     finally:
         reader.close()
     return ps
@@ -149,7 +150,9 @@ class ParticleSpatiocyteLoaderNode(PipelineNode):
         elif spec == ParticleSpaceSpec:
             debug('Serving ParticleSpaceSpec')
             # this may be None if datasource is not valid.
-            return self.fetch_particle_space(**kwargs)
+            ps = self.fetch_particle_space(**kwargs)
+            print ps.list_particles()
+            return ps
         return None
 
 

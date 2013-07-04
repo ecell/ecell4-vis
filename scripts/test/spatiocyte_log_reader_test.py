@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
+import sys
+sys.path.insert(0, '../')
 
 from spatiocyte_log_reader import SpatiocyteLogReader
 
@@ -22,7 +24,7 @@ def main():
     print 'Index : 30'
     print reader.skipSpeciesTo(30)
 
-    reader.closeLogFile()
+    reader.close()
 
 if __name__ == "__main__":
     main()
