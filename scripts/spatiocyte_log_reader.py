@@ -187,16 +187,16 @@ class SpatiocyteLogReader:
         self.logfile.seek(8,1)
 
         for i in range(self.header['theLatticeSpSize']):
-            molecules = self.skipMolecules()
+            self.skipMolecules()
 
         for i in range(self.header['thePolymerSize']):
-            molecules = self.skipSourceMolecules()
+            self.skipSourceMolecules()
 
         for i in range(self.header['thePolymerSize']):
-            molecules = self.skipTargetMolecules()
+            self.skipTargetMolecules()
 
         for i in range(self.header['thePolymerSize']):
-            molecule = self.skipSharedMolecules()
+            self.skipSharedMolecules()
 
         theLogMarker0 = struct.unpack('I', self.logfile.read(4))[0]
         if theLogMarker0 != self.header['theLogMarker']:

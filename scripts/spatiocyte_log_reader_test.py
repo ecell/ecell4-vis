@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-from log_reader import SpatiocyteLogReader
+from spatiocyte_log_reader import SpatiocyteLogReader
 
 def main():
     '''
