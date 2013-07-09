@@ -24,6 +24,7 @@ class AddPipelineNodeDialog(wx.Dialog):
         wx.Dialog.__init__(self, *args, **kwargs)
         caption_label = wx.StaticText(self, -1, label=caption)
         type_listbox = wx.ListBox(self, -1, style=wx.LB_SINGLE|wx.LB_SORT|wx.SUNKEN_BORDER, choices=pn_choices)
+        type_listbox.Bind(wx.EVT_LISTBOX_DCLICK, self.OnListboxDoubleClick)
         # 'Name:' text entry
         name_label = wx.StaticText(self, -1, label='Name: ')
         name_text = wx.TextCtrl(self, -1, 'MyPipelineNode')
@@ -36,9 +37,9 @@ class AddPipelineNodeDialog(wx.Dialog):
         # populate dialog's root sizer
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(caption_label, 0, wx.ALL|wx.EXPAND, 10)
-        sizer.Add(type_listbox, 0, wx.ALL|wx.EXPAND, 10)
+        sizer.Add(type_listbox, 5, wx.LEFT|wx.RIGHT|wx.EXPAND, 10)
         sizer.Add(text_sizer, 0, wx.ALL|wx.EXPAND, 10)
-        sizer.Add(button_sizer, 0, wx.ALL|wx.EXPAND, 0)
+        sizer.Add(button_sizer, 1, wx.ALL|wx.EXPAND, 0)
         # memorize OK/Cancel button for Enable/Disable control
         ok_button, cancel_button = None, None
         # This is a small hack to disable OK button at default.
@@ -60,6 +61,11 @@ class AddPipelineNodeDialog(wx.Dialog):
         self.Bind(wx.EVT_LISTBOX, self.OnListBox)
         self.Bind(wx.EVT_TEXT, self.OnNameText)
         self.SetSizer(sizer)
+
+    def OnListboxDoubleClick(self, evt):
+        if self.node_name is None:
+            return
+        self.EndModal(wx.ID_OK)
 
     def OnListBox(self, evt):
         """If no entry in list box is selected, disable OK button.
