@@ -7,7 +7,6 @@ import re
 import glob
 from urlparse import urlparse
 import wx, wx.aui
-import numpy
 
 # this allows module-wise execution
 try:
@@ -19,36 +18,32 @@ except ImportError:
 from ec4vis.logger import debug, log_call, warning
 from ec4vis.pipeline import PipelineNode, PipelineSpec, UpdateEvent, UriSpec, register_pipeline_node
 from ec4vis.pipeline.specs import NumberOfItemsSpec
-from ec4vis.plugins.particle_space import Particle, ParticleSpace
-#from lattice_space import LatticeParticle, LatticeParticleSpace
-from spatiocyte_tools import coord2point
+from ec4vis.plugins.lattice_space import LatticeParticle, LatticeParticleSpace
+from ec4vis.plugins.spatiocyte_tools import coord2point
 
-from ec4vis.plugins.particle_csv_loader import ParticleSpaceSpec
+from ec4vis.plugins.particle_csv_loader import ParticleSpaceSpec # TODO
 
 def load_particles_from_spatiocyte(filename, index=0, ps=None):
     if not os.path.isfile(filename):
         return ps
 
-    if ps is None:
-        ps = ParticleSpace()
-
     try:
         reader = SpatiocyteLogReader(filename)
-        header = reader.getHeader()
-        col_size = header['aColSize']
-        row_size = header['aRowSize']
-        layer_size = header['aLayerSize']
-        lspecies = header['latticeSpecies']
+        if ps is None:
+            header = reader.getHeader()
+            col_size = header['aColSize']
+            row_size = header['aRowSize']
+            layer_size = header['aLayerSize']
+            lspecies = header['latticeSpecies']
+            voxel_radius = header['aVoxelRadius']
+            ps = LatticeParticleSpace(col_size, row_size, layer_size,
+                    lspecies, voxel_radius)
         species = reader.skipSpeciesTo(index)
-        pid = 0
         molecules = species['Molecules'];
         for sp in molecules:
             sid = sp['index']
-            (string, radius) = lspecies[sid]
             for coord in sp['Coords']:
-                pos = coord2point(coord, row_size, layer_size)
-                pos = numpy.array(pos) * 2 * header['aVoxelRadius']
-                ps.add_particle(pid, Particle(string, pos, radius))
+                ps.add_particle(LatticeParticle(sid, coord))
     finally:
         reader.close()
     return ps
@@ -65,10 +60,8 @@ class ParticleSpatiocyteLoaderProgressDialog(wx.ProgressDialog):
         self.index = 0 #TODO
 
     def Show(self):
-        ps = ParticleSpace()
-
         for i, filename in enumerate(self.filenames):
-            ps = load_particles_from_spatiocyte(filename, self.index, ps)
+            ps = load_particles_from_spatiocyte(filename, self.index)
             if not self.Update(i):
                 return None
         return ps
