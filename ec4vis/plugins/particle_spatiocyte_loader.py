@@ -45,6 +45,7 @@ def load_particles_from_spatiocyte(filename, index=0, ps=None):
         for sp in molecules:
             sid = sp['index']
             (string, radius) = lspecies[sid]
+            debug("sid : %d, string : %s, radius : %f, count : %d" % (sid, string, radius, len(sp['Coords'])))
             for coord in sp['Coords']:
                 pos = coord2point(coord, row_size, layer_size)
                 pos = numpy.array(pos) * 2 * header['aVoxelRadius']
@@ -62,7 +63,7 @@ class ParticleSpatiocyteLoaderProgressDialog(wx.ProgressDialog):
             style=wx.PD_ELAPSED_TIME | wx.PD_REMAINING_TIME | wx.PD_AUTO_HIDE)
 
         self.filenames = filenames
-        self.index = 0 #TODO
+        self.index = 1 #TODO
 
     def Show(self):
         ps = ParticleSpace()

@@ -72,7 +72,7 @@ class SpatiocyteLogReader:
 
         for i in range(self.header['theLatticeSpSize']):
             aStringSize = struct.unpack('I', self.logfile.read(4))[0]
-            aString = struct.unpack('s' + str(aStringSize),
+            aString = struct.unpack(str(aStringSize) + 's',
                     self.logfile.read(aStringSize))[0]
             aRadius = struct.unpack('d', self.logfile.read(8))[0]
             species.append((aString, aRadius))
@@ -94,7 +94,7 @@ class SpatiocyteLogReader:
         species = []
         for i in range(self.header['theOffLatticeSpSize']):
             aStringSize = struct.unpack('I', self.logfile.read(4)[0])
-            aString = struct.unpack('s' + str(aStringSize),
+            aString = struct.unpack(str(aStringSize) + 's',
                     self.logfile.read(aStringSize))[0]
             aRadius = struct.unpack('d', logfile.read(8))[0]
             species.append((aString, aRadius))
@@ -107,6 +107,7 @@ class SpatiocyteLogReader:
         corresponding to VisualizationLogProces::logCompVacant()
         '''
         data = {}
+
         aCurrentTime = struct.unpack('d', self.logfile.read(8))[0]
         i = 0
         data['Coords'] = {}
