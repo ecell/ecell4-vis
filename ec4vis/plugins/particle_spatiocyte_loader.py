@@ -42,6 +42,7 @@ def load_particles_from_spatiocyte(filename, index=0, ps=None):
         species = reader.skipSpeciesTo(index)
         pid = 0
         molecules = species['Molecules'];
+        debug("index : %d" % index)
         for sp in molecules:
             sid = sp['index']
             (string, radius) = lspecies[sid]
@@ -63,7 +64,7 @@ class ParticleSpatiocyteLoaderProgressDialog(wx.ProgressDialog):
             style=wx.PD_ELAPSED_TIME | wx.PD_REMAINING_TIME | wx.PD_AUTO_HIDE)
 
         self.filenames = filenames
-        self.index = 1 #TODO
+        self.index = 0
 
     def Show(self):
         ps = ParticleSpace()
@@ -97,14 +98,15 @@ class ParticleSpatiocyteLoaderNode(PipelineNode):
         if mobj is None:
             raise IOError, 'No suitable file.'
 
+        index = 19 #TODO
         filenames = glob.glob(fullpath)
         if len(filenames) > 1:
-            dialog = ParticleSpatiocyteLoaderProgressDialog(glob.glob(fullpath))
-            #dialog = ParticleSpatiocyteLoaderProgressDialog(filenames) FIXME
+            dialog = ParticleSpatiocyteLoaderProgressDialog(filenames)
+            dialog.index = index
             ps = dialog.Show()
             dialog.Destroy()
         elif len(filenames) == 1:
-            ps = load_particles_from_spatiocyte(filenames[0])
+            ps = load_particles_from_spatiocyte(filenames[0],index)
         else:
             ps = None
         return ps
