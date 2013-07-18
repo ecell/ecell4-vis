@@ -2,7 +2,6 @@
 """ec4vis.plugins.particle_spatiocyte_loader --- Simple Spatiocyte data loader plugin.
 """
 import os.path
-from spatiocyte_log_reader import SpatiocyteLogReader
 import re
 import glob
 from urlparse import urlparse
@@ -19,7 +18,7 @@ from ec4vis.logger import debug, log_call, warning
 from ec4vis.pipeline import PipelineNode, PipelineSpec, UpdateEvent, UriSpec, register_pipeline_node
 from ec4vis.pipeline.specs import NumberOfItemsSpec
 from ec4vis.plugins.lattice_space import LatticeParticle, LatticeParticleSpace
-from ec4vis.plugins.spatiocyte_tools import coord2point
+from ec4vis.plugins.spatiocyte_tools import SpatiocyteLogReader
 
 from ec4vis.plugins.particle_csv_loader import ParticleSpaceSpec # TODO
 

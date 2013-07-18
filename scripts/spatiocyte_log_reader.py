@@ -1,1 +1,0 @@
-../ec4vis/plugins/spatiocyte_log_reader.py
