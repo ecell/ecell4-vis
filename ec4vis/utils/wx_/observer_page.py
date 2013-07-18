@@ -2,6 +2,7 @@
 """ec4vis.utils.wx_.observer_page --- 
 """
 import wx, wx.aui
+import wx.lib.scrolledpanel as scrolled
 
 # this allows module-wise execution
 try:
@@ -14,7 +15,7 @@ from ec4vis.logger import debug, log_call
 from ec4vis.pipeline import Observer
 
 
-class ObserverPage(wx.Panel, Observer):
+class ObserverPage(scrolled.ScrolledPanel, Observer):
     """Abstract superclass for observer pages
     """
     def __init__(self, *args, **kwargs):
@@ -24,7 +25,8 @@ class ObserverPage(wx.Panel, Observer):
         target = kwargs.pop('target')
         self._sizer = None # this should be before parent's __init__
         Observer.__init__(self, target) # this will bind self.target
-        wx.Panel.__init__(self, *args, **kwargs)
+        scrolled.ScrolledPanel.__init__(self,*args,**kwargs)
+        self.SetupScrolling()
 
     @property
     def sizer(self):

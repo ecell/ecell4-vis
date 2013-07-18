@@ -144,7 +144,6 @@ class ParticleSpatiocyteLoaderNode(PipelineNode):
             debug('Serving ParticleSpaceSpec')
             # this may be None if datasource is not valid.
             ps = self.fetch_particle_space(**kwargs)
-            print ps.list_particles()
             return ps
         return None
 

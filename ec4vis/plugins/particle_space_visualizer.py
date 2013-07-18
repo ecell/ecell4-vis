@@ -3,6 +3,8 @@
 """
 import wx, wx.aui
 import vtk
+import os
+import json
 import numpy
 import colorsys
 
@@ -10,7 +12,7 @@ import colorsys
 try:
     import ec4vis
 except ImportError:
-    import sys, os
+    import sys
     p = os.path.abspath(__file__); sys.path.insert(0, p[: p.rindex(os.sep + 'ec4vis')])
 
 from ec4vis.inspector.page import InspectorPage, register_inspector_page
@@ -245,10 +247,17 @@ class ParticleSpaceVisualizerInspector(InspectorPage):
         self.init_ui()
 
     def init_ui(self):
-        self.init_particle_space_ui()
-        self.init_particle_ui()
+        widgets = []
+        widgets.extend(self.get_particle_space_widgets())
+        widgets.extend(self.get_particle_widgets())
+        fx_sizer = wx.FlexGridSizer(cols=2, vgap=9, hgap=15)
+        fx_sizer.AddMany(widgets)
+        fx_sizer.AddGrowableCol(1)
+        self.sizer.Add(fx_sizer, 1, wx.EXPAND | wx.ALL, 10)
 
-    def init_particle_space_ui(self):
+        self.update()
+
+    def get_particle_space_widgets(self):
         widgets = []
 
         self.view_scale_entry = wx.TextCtrl(
@@ -274,18 +283,13 @@ class ParticleSpaceVisualizerInspector(InspectorPage):
 
         self.listbox.Bind(wx.EVT_RIGHT_DOWN, self.listbox_right_down)
 
-        self.button = wx.Button(self, wx.ID_ANY, "save png")
-        widgets.extend([
-                        (self.button, 1, wx.ALL | wx.EXPAND)])
-        self.button.Bind(wx.EVT_BUTTON, self.button_click)
+        #self.button = wx.Button(self, wx.ID_ANY, "save png")
+        #widgets.extend([
+        #                (self.button, 1, wx.ALL | wx.EXPAND)])
+        #self.button.Bind(wx.EVT_BUTTON, self.button_click)
+        return widgets
 
-        # pack in FlexGridSizer.
-        fx_sizer = wx.FlexGridSizer(cols=2, vgap=9, hgap=25)
-        fx_sizer.AddMany(widgets)
-        fx_sizer.AddGrowableCol(1)
-        self.sizer.Add(fx_sizer, 1, wx.EXPAND | wx.ALL, 10)
-
-    def init_particle_ui(self):
+    def get_particle_widgets(self):
         widgets = []
         # offscreen controls
         self.capture_image_button = wx.Button(
@@ -320,12 +324,7 @@ class ParticleSpaceVisualizerInspector(InspectorPage):
         widgets.extend([
             wx.StaticText(self, -1, 'Import/Export'), (0, 0),
             self.import_button, self.export_button])
-        # pack in FlexGridSizer.
-        fx_sizer = wx.FlexGridSizer(cols=2, vgap=5, hgap=5)
-        fx_sizer.AddMany(widgets)
-        fx_sizer.AddGrowableCol(1)
-        self.sizer.Add(fx_sizer, 1, wx.EXPAND|wx.ALL, 10)
-        self.update()
+        return widgets
 
 
     @log_call
