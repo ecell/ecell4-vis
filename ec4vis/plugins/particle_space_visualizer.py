@@ -242,7 +242,13 @@ class ParticleSpaceVisualizerInspector(InspectorPage):
         """Initializer.
         """
         InspectorPage.__init__(self, *args, **kwargs)
+        self.init_ui()
 
+    def init_ui(self):
+        self.init_particle_space_ui()
+        self.init_particle_ui()
+
+    def init_particle_space_ui(self):
         widgets = []
 
         self.view_scale_entry = wx.TextCtrl(
@@ -279,6 +285,49 @@ class ParticleSpaceVisualizerInspector(InspectorPage):
         fx_sizer.AddGrowableCol(1)
         self.sizer.Add(fx_sizer, 1, wx.EXPAND | wx.ALL, 10)
 
+    def init_particle_ui(self):
+        widgets = []
+        # offscreen controls
+        self.capture_image_button = wx.Button(
+            self, -1, label='Capture Image')
+        self.Bind(wx.EVT_BUTTON, self.OnCaptureImageButton,
+                  self.capture_image_button)
+        widgets.extend([
+            self.capture_image_button, (0, 0)])
+
+        # x/y/z controls
+        for attr_name in ['Position', 'Focal point', 'View Up']:
+            widgets.extend([wx.StaticText(self, -1, attr_name), (0, 0)])
+            for i, axis_name in enumerate(['x', 'y', 'z']):
+                prop_name = attr_name.lower().replace(' ', '_')+'_'+axis_name
+                label = wx.StaticText(self, -1, axis_name)
+                text_ctrl = wx.TextCtrl(self, -1, '', style=wx.TE_PROCESS_ENTER)
+                setattr(self, prop_name+'_text', text_ctrl)
+                widgets.extend([label, text_ctrl])
+        # parallel scale
+        self.parallel_scale_text = wx.TextCtrl(self, -1, '', style=wx.TE_PROCESS_ENTER)
+        widgets.extend([
+            wx.StaticText(self, -1, 'Scale'), self.parallel_scale_text])
+        # event bindings for text_ctrls
+        for widget in widgets:
+            if isinstance(widget, wx.TextCtrl):
+                self.Bind(wx.EVT_TEXT_ENTER, self.OnCameraParameterText, widget)
+        # import/export buttons
+        self.import_button = wx.Button(self, -1, label='Import...')
+        self.export_button = wx.Button(self, -1, label='Export...')
+        self.Bind(wx.EVT_BUTTON, self.OnImportButton, self.import_button)
+        self.Bind(wx.EVT_BUTTON, self.OnExportButton, self.export_button)
+        widgets.extend([
+            wx.StaticText(self, -1, 'Import/Export'), (0, 0),
+            self.import_button, self.export_button])
+        # pack in FlexGridSizer.
+        fx_sizer = wx.FlexGridSizer(cols=2, vgap=5, hgap=5)
+        fx_sizer.AddMany(widgets)
+        fx_sizer.AddGrowableCol(1)
+        self.sizer.Add(fx_sizer, 1, wx.EXPAND|wx.ALL, 10)
+        self.update()
+
+
     @log_call
     def view_scale_entry_updated(self, event):
         raw_value = self.view_scale_entry.GetValue().strip()
@@ -308,7 +357,9 @@ class ParticleSpaceVisualizerInspector(InspectorPage):
 
     @log_call
     def listbox_select(self, event):
-        pass
+        #TODO
+        checked = self.listbox.GetChecked()
+        debug(checked)
 
     def listbox_right_down(self, event):
         popupmenu = wx.Menu()
@@ -366,5 +417,118 @@ class ParticleSpaceVisualizerInspector(InspectorPage):
                 self.listbox.Check(i, True)
                 c = tuple([int(x * 255) for x in self.target.sid_color_map[sid]])
                 self.listbox.SetItemForegroundColour(i, c)
+
+        """Called on any status_change() on PipelineNode.
+        """
+        self.params_from_camera()
+
+    def params_from_camera(self):
+        """Reflects camera parameters from current active camera.
+        """
+        camera = self.target.renderer.GetActiveCamera()
+        if camera:
+            for prefix, parameter in (
+                ('position_', camera.GetPosition()),
+                ('focal_point_', camera.GetFocalPoint()),
+                ('view_up_', camera.GetViewUp())):
+                for i, axis_name in enumerate(['x', 'y', 'z']):
+                    # debug(prefix + axis_name + '_text' + ':' + str(parameter[i]))
+                    getattr(self, prefix+axis_name+'_text').SetValue(str(parameter[i]))
+            self.parallel_scale_text.SetValue(str(camera.GetParallelScale()))
+
+    @log_call
+    def OnCaptureImageButton(self, evt):
+        """Controls offscreen rendering mode
+        """
+        dlg = wx.FileDialog(
+            self, message="Save capture image as ...",
+            defaultDir=os.getcwd(),
+            defaultFile="capture.png", wildcard="PNG (*.png)|*.png|",
+            style=wx.SAVE)
+        ret = dlg.ShowModal()
+        if ret==wx.ID_OK:
+            path = dlg.GetPath()
+            try:
+                render_window = self.target.renderer.GetRenderWindow()
+                image_filter = vtk.vtkWindowToImageFilter()
+                image_writer = vtk.vtkPNGWriter()
+                image_filter.SetInput(render_window)
+                image_filter.Update()
+                image_writer.SetInputConnection(
+                    image_filter.GetOutputPort())
+                image_writer.SetFileName(path)
+                render_window.Render()
+                image_writer.Write()
+            except Exception, e:
+                debug('Import failed due to %s' %(str(e)))
+
+    @log_call
+    def OnCameraParameterText(self, evt):
+        """Called on TextCtrl edits.
+        """
+        try:
+            camera = self.target.renderer.GetActiveCamera()
+            # x/y/z controls
+            for prefix, handler in (
+                ('position_', camera.SetPosition),
+                ('focal_point_', camera.SetFocalPoint),
+                ('view_up_', camera.SetViewUp)):
+                handler(*[
+                    float(getattr(self, prefix+axis_name+'_text').GetValue())
+                    for i, axis_name in enumerate(['x', 'y', 'z'])])
+            # parallel scale
+            camera.SetParallelScale(float(self.parallel_scale_text.GetValue()))
+            self.target.status_changed(exclude_observers=[self])
+        except Exception, e:
+            debug('OnCameraParameterText failed due to %s' %(e))
+            self.params_from_camera()
+
+    @log_call
+    def OnImportButton(self, evt):
+        """Called on Import... button
+        """
+        dlg = wx.FileDialog(
+            self, message="Open camera parameters ...", defaultDir=os.getcwd(),
+            defaultFile="camera_params.json", wildcard="Json (*.json)|*.json|")
+        ret = dlg.ShowModal()
+        if ret==wx.ID_OK:
+            path = dlg.GetPath()
+            try:
+                infile = open(path, 'r')
+                data = json.loads(infile.read())
+                infile.close()
+                camera = self.target.renderer.GetActiveCamera()
+                camera.SetPosition(data['position'])
+                camera.SetFocalPoint(data['focal_point'])
+                camera.SetViewUp(data['view_up'])
+                camera.SetParallelScale(data['parallel_scale'])
+                self.params_from_camera()
+            except Exception, e:
+                debug('Import failed due to %s' %(str(e)))
+
+    @log_call
+    def OnExportButton(self, evt):
+        """Called on Export... button
+        """
+        dlg = wx.FileDialog(
+            self, message="Save file as ...", defaultDir=os.getcwd(),
+            defaultFile="camera_params.json", wildcard="Json (*.json)|*.json|",
+            style=wx.SAVE)
+        ret = dlg.ShowModal()
+        if ret==wx.ID_OK:
+            path = dlg.GetPath()
+            try:
+                camera = self.target.renderer.GetActiveCamera()
+                data = dict(
+                    position=tuple(camera.GetPosition()),
+                    focal_point=tuple(camera.GetFocalPoint()),
+                    view_up=tuple(camera.GetViewUp()),
+                    parallel_scale=camera.GetParallelScale())
+                ofile = open(path, 'w')
+                ofile.write(json.dumps(data))
+                ofile.close()
+            except Exception, e:
+                debug('Export failed due to %s' %(str(e)))
+
 
 register_inspector_page('ParticleSpaceVisualizerNode', ParticleSpaceVisualizerInspector)

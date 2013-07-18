@@ -30,7 +30,7 @@ class ConsoleLogStream(object):
             wx.CallAfter(self.text_ctrl.AppendText, bytes)
         except:
             pass # prevent any failure on app exit.
-    
+
     def flush(self):
         """Do nothing.
         """
