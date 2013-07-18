@@ -180,6 +180,7 @@ class ParticleSpaceVisualizerNode(Vtk3dVisualizerNode):
 
         self.view_scale = 1e-6
         self.sid_color_map = None
+        self.__axes = None
 
     @log_call
     def internal_update(self):
@@ -198,11 +199,11 @@ class ParticleSpaceVisualizerNode(Vtk3dVisualizerNode):
         bounds = self.particles_visual.get_bounds()
         if bounds is not None:
             self.renderer.ResetCamera(bounds)
-            if self._axes is not None:
-                self._renderer.RemoveViewProp(self._axes)
-            self._axes = create_axes(bounds)
-            self._axes.SetCamera(self._renderer.GetActiveCamera())
-            self._renderer.AddViewProp(self._axes)
+            if self.__axes is not None:
+                self.renderer.RemoveViewProp(self.__axes)
+            self.__axes = create_axes(bounds)
+            self.__axes.SetCamera(self.renderer.GetActiveCamera())
+            self.renderer.AddViewProp(self.__axes)
 
     @log_call
     def fetch_particle_space(self, **kwargs):

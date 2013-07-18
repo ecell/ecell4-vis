@@ -91,12 +91,12 @@ class BrowserApp(wx.App):
         self.init_visualizer_panel()
         # assign and show top window
         self.SetTopWindow(self.browser)
-        self.browser.Bind(wx.EVT_CLOSE, self.catch_event_close)
+        # self.browser.Bind(wx.EVT_CLOSE, self.catch_event_close)
         self.browser.Show(True)
 
-    def catch_event_close(self, *args):
-        debug('wx.EVT_CLOSE catched.')
-        self.ExitMainLoop()
+    # def catch_event_close(self, *args):
+    #     debug('wx.EVT_CLOSE catched.')
+    #     self.ExitMainLoop()
 
     def init_browser(self):
         """Initializes browser frame.
@@ -320,7 +320,7 @@ class BrowserApp(wx.App):
             for node_name, node_class
             in PIPELINE_NODE_REGISTRY.items()
             if set(node_class.class_input_spec()).issubset(parent_node.output_spec)]
-        dlg = AddPipelineNodeDialog(self.browser, choices=node_class_choices)
+        dlg = AddPipelineNodeDialog(self.browser, choices=node_class_choices, size=(400, 250))
         new_node = None
         if dlg.ShowModal()==wx.ID_OK:
             label_name = dlg.label_name
@@ -437,6 +437,7 @@ class BrowserApp(wx.App):
         """Called on 'App'->'Quit' menu.
         """
         debug('App::OnAppQuitMenu.')
+        self.browser.Close()
         self.ExitMainLoop()
 
     def OnDatasourceChanged(self, event):
