@@ -504,6 +504,7 @@ class ParticleSpaceVisualizerInspector(InspectorPage):
                 self.params_from_camera()
             except Exception, e:
                 debug('Import failed due to %s' %(str(e)))
+            self.target.propagate_down(UpdateEvent(None))
 
     @log_call
     def OnExportButton(self, evt):

@@ -95,15 +95,6 @@ class SpatiocyteLogReader:
         data['theOffLatticeSpSize'] = struct.unpack('I', self.logfile.read(4))[0]
         data['theLogMarker'] = struct.unpack('I', self.logfile.read(4))[0]
         data['aVoxelRadius'] = struct.unpack('d', self.logfile.read(8))[0]
-        '''
-        header_format = '<IIIIIIdddIIIIId'
-        header_titles = ['aLatticeType', 'theMeanCount', 'aStartCoord',
-                'aRowSize', 'aLayerSize', 'aColSize', 'aRealRowSize',
-                'aRealLayerSize', 'aRealColSize', 'theLatticeSpSize',
-                'thePolymerSize', 'aResersvedSize', 'theOffLatticeSpSize',
-                'theLogMarker', 'aVoxelRadius']
-        data = struct.unpack(header_format,f.read(4*19))
-        '''
         self.header = data
 
     def getHeader(self):
@@ -136,10 +127,10 @@ class SpatiocyteLogReader:
     def readOffLatticeSpecies(self):
         species = []
         for i in range(self.header['theOffLatticeSpSize']):
-            aStringSize = struct.unpack('I', self.logfile.read(4)[0])
+            aStringSize = struct.unpack('I', self.logfile.read(4))[0]
             aString = struct.unpack(str(aStringSize) + 's',
                     self.logfile.read(aStringSize))[0]
-            aRadius = struct.unpack('d', logfile.read(8))[0]
+            aRadius = struct.unpack('d', self.logfile.read(8))[0]
             species.append((aString, aRadius))
 
         self.header['offLatticeSpecies'] = species
@@ -150,29 +141,35 @@ class SpatiocyteLogReader:
         corresponding to VisualizationLogProces::logCompVacant()
         '''
         data = {}
-
         aCurrentTime = struct.unpack('d', self.logfile.read(8))[0]
-        i = 0
-        data['Coords'] = {}
+
+        data['Lattice'] = []
         for index in range(self.header['theLatticeSpSize']+1):
             i = struct.unpack('I', self.logfile.read(4))[0]
             if i == self.header['theLogMarker']:
                 break
+            lattices = {}
+            lattices['index'] = i
+            lattices['Coords'] = []
             aSize = struct.unpack('i', self.logfile.read(4))[0]
-            data['Coords'][i] = []
             for j in range(aSize):
                 aCoord = struct.unpack('I', self.logfile.read(4))
-                data['Coords'][i].append(aCoord)
-        data['Points'] = {}
+                lattices['Coords'].append(aCoord)
+            data['Lattice'].append(lattices)
+
+        data['OffLattice'] = []
         for index in range(self.header['theOffLatticeSpSize']+1):
             i = struct.unpack('I', self.logfile.read(4))[0]
             if i == self.header['theLogMarker']:
                 break
+            offlattices = {}
+            offlattices['index'] = i
+            offlattices['Points'] = []
             aSize = struct.unpack('i', self.logfile.read(4))[0]
-            data['Points'][i] = []
             for j in range(aSize):
                 (x, y, z) = struct.unpack('ddd', self.logfile.read(8*3))
-                data['Points'][i].append({'x':x, 'y':y, 'z':z})
+                offlattices['Points'].append((x, y, z))
+            data['OffLattice'].append(offlattices)
 
         self.header['compVacant'] = data
 
@@ -217,14 +214,14 @@ class SpatiocyteLogReader:
             data['Polymers'].append(polymer)
 
         data['OffLattice'] = []
-        for i in range(self.header['theOffLatticeSpSize']):
-            offLattice = self.readOffLattice()
+        for i in range(self.header['theOffLatticeSpSize'] + 1):
+            read = self.logfile.read(4)
+            check = struct.unpack('I', read)[0]
+            if check == self.header['theLogMarker']:
+                break
+            anIndex = struct.unpack('i', read)[0]
+            offLattice = {'index':anIndex, 'Points':self.readOffLattice()}
             data['OffLattice'].append(offLattice)
-
-        theLogMarker1 = struct.unpack('I', self.logfile.read(4))[0]
-        if theLogMarker1 != self.header['theLogMarker']:
-            print '[ERROR]\tthe log marker is different!'
-            sys.exit()
 
         return data
 
@@ -251,16 +248,14 @@ class SpatiocyteLogReader:
             sys.exit()
 
         for i in range(self.header['thePolymerSize']):
-            polymer = self.skipPolymers()
+            self.skipPolymers()
 
-        for i in range(self.header['theOffLatticeSpSize']):
-            offLattice = self.skipOffLattice()
+        for i in range(self.header['theOffLatticeSpSize'] + 1):
+            check = struct.unpack('I', self.logfile.read(4))[0]
+            if check == self.header['theLogMarker']:
+                break
+            self.skipOffLattice()
 
-
-        theLogMarker1 = struct.unpack('I', self.logfile.read(4))[0]
-        if theLogMarker1 != self.header['theLogMarker']:
-            print '[ERROR]\tthe log marker is different!'
-            sys.exit()
 
     def skipSpeciesTo(self, index):
         currentSeek = self.tell()
@@ -313,7 +308,7 @@ class SpatiocyteLogReader:
     def skipSourceMolecules(self):
         self.logfile.seek(4,1)
         size = struct.unpack('i', self.logfile.read(4))[0]
-        self.logfile.seek(4*size)
+        self.logfile.seek(4*size,1)
 
 
     def readTargetMolecules(self):
@@ -333,7 +328,7 @@ class SpatiocyteLogReader:
     def readTargetMolecules(self):
         self.logfile.seek(4,1)
         size = struct.unpack('i', self.logfile.read(4))[0]
-        self.logfile.seek(4*size)
+        self.logfile.seek(4*size,1)
 
 
     def readSharedMolecules(self):
@@ -352,7 +347,7 @@ class SpatiocyteLogReader:
     def skipSharedMolecules(self):
         self.logfile.seek(4,1)
         size = struct.unpack('i', self.logfile.read(4))[0]
-        self.logfile.seek(4*size)
+        self.logfile.seek(4*size,1)
 
 
     def readPolymers(self):
@@ -371,7 +366,7 @@ class SpatiocyteLogReader:
     def skipPolymers(self):
         self.logfile.seek(4,1)
         size = struct.unpack('i', self.logfile.read(4))[0]
-        self.logfile.seek(24*size)
+        self.logfile.seek(24*size,1)
 
 
     def readOffLattice(self):
@@ -379,17 +374,14 @@ class SpatiocyteLogReader:
         read aSpecies->getPoint(i)
         or  aSpecies->getMultiscaleStructurePoint(i) i(0:aSpecies->size())
         '''
-        data = {}
-        (anIndex, aSize) = struct.unpack('ii', self.logfile.read(8))
-        data['index'] = anIndex
-        data['Points'] = []
+        points=[]
+        aSize = struct.unpack('i', self.logfile.read(4))[0]
         for i in range(aSize):
             (x, y, z) = struct.unpack('ddd', self.logfile.read(8*3))
-            data['Points'].append({'x':x, 'y':y, 'z':z})
-        return data
+            points.append((x, y, z))
+        return points
 
     def skipOffLattice(self):
-        self.logfile.seek(4,1)
         size = struct.unpack('i', self.logfile.read(4))[0]
-        self.logfile.seek(24*size)
+        self.logfile.seek(8*3*size, 1)
 

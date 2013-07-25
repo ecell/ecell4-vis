@@ -4,7 +4,7 @@ import os
 import sys
 sys.path.insert(0, '../')
 
-from spatiocyte_log_reader import SpatiocyteLogReader
+from spatiocyte_tools import SpatiocyteLogReader
 
 def main():
     '''
@@ -27,12 +27,15 @@ def main():
     count = 0
     while not reader.isEnd() :
         species = reader.readSpecies()
-        print "count : %d, tell : %d, num of species : %d" % (count, reader.tell(), len(species))
+        num_of_lattices = len(species['Molecules'])
+        num_of_offlattices = len(species['OffLattice'])
+        print "count : %d, tell : %d, num of lattices : %d, num of offlattices : %d" % (count, reader.tell(), num_of_lattices, num_of_offlattices)
         count += 1
 
+    index = count - 1
     print "LastSeek : %d, FooterSeek : %d" % (reader.tell(), reader.footerSeek)
-    print "Index : %d" % (count - 1)
-    species = reader.skipSpeciesTo(count - 1)
+    print "Index : %d" % index
+    species = reader.skipSpeciesTo(index)
     for spiece in species['Molecules']:
         print spiece
 

@@ -17,7 +17,7 @@ except ImportError:
 from ec4vis.logger import debug, log_call, warning
 from ec4vis.pipeline import PipelineNode, PipelineSpec, UpdateEvent, UriSpec, register_pipeline_node
 from ec4vis.pipeline.specs import NumberOfItemsSpec
-from ec4vis.plugins.lattice_space import LatticeParticle, LatticeParticleSpace
+from ec4vis.plugins.lattice_space import LatticeParticle, OffLatticeParticle, LatticeParticleSpace
 from ec4vis.plugins.spatiocyte_tools import SpatiocyteLogReader
 
 from ec4vis.plugins.particle_csv_loader import ParticleSpaceSpec # TODO
@@ -33,17 +33,36 @@ def load_particles_from_spatiocyte(filename, index=0, ps=None):
             col_size = header['aColSize']
             row_size = header['aRowSize']
             layer_size = header['aLayerSize']
-            lspecies = header['latticeSpecies']
+            lattice_species = header['latticeSpecies']
+            offlattice_species = header['offLatticeSpecies']
             voxel_radius = header['aVoxelRadius']
+
+            compVacant = []
+            lattice_vacant = header['compVacant']['Lattice']
+            offlattice_vacant = header['compVacant']['OffLattice']
+            for sp in lattice_vacant:
+                sid = sp['index']
+                for coord in sp['Coords']:
+                    compVacant.append(LatticeParticle(sid, coord))
+            for sp in offlattice_vacant:
+                sid = sp['index']
+                for point in sp['Points']:
+                    compVacant.append(OffLatticeParticle(sid, point))
+
             ps = LatticeParticleSpace(col_size, row_size, layer_size,
-                    lspecies, voxel_radius)
+                    voxel_radius, lattice_species, offlattice_species, compVacant)
+
         species = reader.skipSpeciesTo(index)
         molecules = species['Molecules'];
-        debug("index : %d" % index)
+        offlattice = species['OffLattice']
         for sp in molecules:
             sid = sp['index']
             for coord in sp['Coords']:
                 ps.add_particle(LatticeParticle(sid, coord))
+        for sp in offlattice:
+            sid = sp['index']
+            for point in sp['Points']:
+                ps.add_particle(OffLatticeParticle(sid, point))
     finally:
         reader.close()
     return ps
@@ -89,7 +108,7 @@ class ParticleSpatiocyteLoaderNode(PipelineNode):
         if mobj is None:
             raise IOError, 'No suitable file.'
 
-        index = 19 #TODO
+        index = 700 #TODO
         filenames = glob.glob(fullpath)
         if len(filenames) > 1:
             dialog = ParticleSpatiocyteLoaderProgressDialog(filenames)
