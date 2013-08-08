@@ -24,15 +24,8 @@ def main():
     header = reader.header
     print '[header]\t',header
 
-    count = 0
-    while not reader.isEnd() :
-        species = reader.readSpecies()
-        num_of_lattices = len(species['Molecules'])
-        num_of_offlattices = len(species['OffLattice'])
-        print "count : %d, tell : %d, num of lattices : %d, num of offlattices : %d" % (count, reader.tell(), num_of_lattices, num_of_offlattices)
-        count += 1
-
-    index = count - 1
+    indexSize = reader.getIndexSize()
+    index = indexSize - 1
     print "LastSeek : %d, FooterSeek : %d" % (reader.tell(), reader.footerSeek)
     print "Index : %d" % index
     species = reader.skipSpeciesTo(index)

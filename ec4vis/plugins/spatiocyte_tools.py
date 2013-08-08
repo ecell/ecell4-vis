@@ -55,6 +55,7 @@ class SpatiocyteLogReader:
         self.logfile.seek(0,2)
         self.footerSeek = self.tell()
         self.logfile.seek(self.headerSeek)
+        self._indexSize = -1
 
     def close(self):
         self.logfile.close()
@@ -64,6 +65,17 @@ class SpatiocyteLogReader:
 
     def isEnd(self):
         return self.tell() == self.footerSeek
+
+    def getIndexSize(self):
+        if self._indexSize != -1:
+            return self._indexSize
+        count = 0
+        while True:
+            self.skipSpecies()
+            count += 1
+            if self.isEnd():
+                return count
+
 
     def readInitialization(self):
         '''
