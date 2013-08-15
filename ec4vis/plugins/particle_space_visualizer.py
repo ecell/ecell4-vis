@@ -182,6 +182,8 @@ class ParticleSpaceVisualizerNode(Vtk3dVisualizerNode):
 
         self.view_scale = 1e-6
         self.sid_color_map = None
+        self.index = 0
+        self.max_index = 0
         self.__axes = None
 
     @log_call
@@ -191,7 +193,9 @@ class ParticleSpaceVisualizerNode(Vtk3dVisualizerNode):
         # self.view_scale = 1e-6
         # self.sid_color_map = None
 
-        ps = self.fetch_particle_space()
+        kwargs = {'index':self.index}
+        ps = self.fetch_particle_space(**kwargs)
+        self.max_index = self.parent.request_data(NumberOfItemsSpec)
         self.particles_visual.reset_actors(
             dict(particle_space = ps,
                  view_scale = self.view_scale,
@@ -263,9 +267,14 @@ class ParticleSpaceVisualizerInspector(InspectorPage):
         self.view_scale_entry = wx.TextCtrl(
             self, wx.ID_ANY, "1e-6", style=wx.TE_PROCESS_ENTER)
         self.view_scale_entry.Bind(wx.EVT_TEXT_ENTER, self.view_scale_entry_updated)
+        self.index_widget = wx.Slider(self, style=wx.SL_HORIZONTAL | wx.SL_LABELS)
+        self.index_widget.SetMin(0)
+        self.index_widget.Bind(wx.EVT_SLIDER, self.index_updated)
         widgets.extend([
             (wx.StaticText(self, -1, 'Scale :'), 0, wx.ALL | wx.EXPAND),
-            (self.view_scale_entry, 1, wx.ALL | wx.EXPAND)])
+            (self.view_scale_entry, 1, wx.ALL | wx.EXPAND),
+            (wx.StaticText(self, -1, 'Index :'), 0, wx.ALL | wx.EXPAND),
+            (self.index_widget, 1, wx.ALL | wx.EXPAND)])
 
         element_array = []
         self.listbox = wx.CheckListBox(
@@ -347,6 +356,11 @@ class ParticleSpaceVisualizerInspector(InspectorPage):
             self.view_scale_entry.ChangeValue(str(self.target.view_scale))
 
     @log_call
+    def index_updated(self, event):
+        self.target.index = self.index_widget.GetValue()
+        self.target.status_changed()
+
+    @log_call
     def refresh_button_pressed(self, event):
         self.target.sid_color_map = None
         self.target.update_list()
@@ -403,6 +417,8 @@ class ParticleSpaceVisualizerInspector(InspectorPage):
         writer.Write()
         print "hogehoge"
 
+
+
     #@log_call
     def update(self):
         """Update UI.
@@ -416,6 +432,7 @@ class ParticleSpaceVisualizerInspector(InspectorPage):
                 self.listbox.Check(i, True)
                 c = tuple([int(x * 255) for x in self.target.sid_color_map[sid]])
                 self.listbox.SetItemForegroundColour(i, c)
+        self.index_widget.SetMax(self.target.max_index-1)
 
         """Called on any status_change() on PipelineNode.
         """

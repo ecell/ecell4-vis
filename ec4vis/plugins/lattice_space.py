@@ -25,8 +25,10 @@ class OffLatticeParticle(object):
 
 class LatticeParticleSpace(object):
 
-    def __init__(self, col_size, row_size, layer_size, voxel_radius,
+    def __init__(self, index, max_index, col_size, row_size, layer_size, voxel_radius,
             lattice_species, offlattice_species, compVacant):
+        self.__index = index
+        self.__max_index = max_index
         self.__lattice_pool = {}
         self.__offlattice_pool = {}
         #self.__pool = {}
@@ -41,6 +43,12 @@ class LatticeParticleSpace(object):
 
         for sp in compVacant:
             self.add_particle(sp)
+
+    def getIndex(self):
+        return self.__index
+
+    def getNumberOfItems(self):
+        return self.__max_index
 
     @property
     def species(self):

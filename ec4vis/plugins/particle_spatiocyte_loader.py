@@ -20,7 +20,7 @@ from ec4vis.pipeline.specs import NumberOfItemsSpec
 from ec4vis.plugins.lattice_space import LatticeParticle, OffLatticeParticle, LatticeParticleSpace
 from ec4vis.plugins.spatiocyte_tools import SpatiocyteLogReader
 
-from ec4vis.plugins.particle_csv_loader import ParticleSpaceSpec # TODO
+from ec4vis.plugins.particle_csv_loader import ParticleSpaceSpec
 
 def load_particles_from_spatiocyte(filename, index=0, ps=None):
     if not os.path.isfile(filename):
@@ -29,6 +29,7 @@ def load_particles_from_spatiocyte(filename, index=0, ps=None):
     try:
         reader = SpatiocyteLogReader(filename)
         if ps is None:
+            max_index = reader.getIndexSize()
             header = reader.getHeader()
             col_size = header['aColSize']
             row_size = header['aRowSize']
@@ -49,7 +50,7 @@ def load_particles_from_spatiocyte(filename, index=0, ps=None):
                 for point in sp['Points']:
                     compVacant.append(OffLatticeParticle(sid, point))
 
-            ps = LatticeParticleSpace(col_size, row_size, layer_size,
+            ps = LatticeParticleSpace(index, max_index, col_size, row_size, layer_size,
                     voxel_radius, lattice_species, offlattice_species, compVacant)
 
         species = reader.skipSpeciesTo(index)
@@ -94,6 +95,7 @@ class ParticleSpatiocyteLoaderNode(PipelineNode):
     def __init__(self, *args, **kwargs):
         self._particle_space = None
         self._uri = None
+        self._index = -1
         PipelineNode.__init__(self, *args, **kwargs)
 
     @log_call
@@ -102,13 +104,12 @@ class ParticleSpatiocyteLoaderNode(PipelineNode):
         """
         self._particle_space = None
 
-    def load_spatiocyte_file(self, fullpath):
+    def load_spatiocyte_file(self, fullpath, index):
         rexp = re.compile('(.+)\.dat$')
         mobj = rexp.match(fullpath)
         if mobj is None:
             raise IOError, 'No suitable file.'
 
-        index = 700 #TODO
         filenames = glob.glob(fullpath)
         if len(filenames) > 1:
             dialog = ParticleSpatiocyteLoaderProgressDialog(filenames)
@@ -126,7 +127,13 @@ class ParticleSpatiocyteLoaderNode(PipelineNode):
         """
         # examine cache
         uri = self.parent.request_data(UriSpec, **kwargs)
-        if not (self._uri == uri):
+
+        if 'index' in kwargs:
+            index = kwargs['index']
+        else:
+            index = 0
+
+        if not (self._uri == uri and self._index == index):
             self._particle_space = None
             self._uri = uri
 
@@ -141,7 +148,7 @@ class ParticleSpatiocyteLoaderNode(PipelineNode):
             try:
                 parsed = urlparse(uri)
                 fullpath = parsed.netloc + parsed.path
-                self._particle_space = self.load_spatiocyte_file(fullpath)
+                self._particle_space = self.load_spatiocyte_file(fullpath, index)
             except IOError, e:
                 warning('Failed to open %s: %s', fullpath, str(e))
                 pass
@@ -155,10 +162,11 @@ class ParticleSpatiocyteLoaderNode(PipelineNode):
         """
         if spec == NumberOfItemsSpec:
             debug('Serving NumberOfItemsSpec')
-            if self.fetch_particle_space(**kwargs) is None:
+            ps = self.fetch_particle_space(**kwargs)
+            if ps is None:
                 return 0
             else:
-                return 1
+                return ps.getNumberOfItems()
         elif spec == ParticleSpaceSpec:
             debug('Serving ParticleSpaceSpec')
             # this may be None if datasource is not valid.
