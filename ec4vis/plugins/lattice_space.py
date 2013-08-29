@@ -8,6 +8,7 @@ try:
 except ImportError:
     import sys, os
     p = os.path.abspath(__file__); sys.path.insert(0, p[: p.rindex(os.sep + 'ec4vis')])
+
 from ec4vis.plugins.spatiocyte_tools import coord2point
 from ec4vis.plugins.particle_space import Particle
 
