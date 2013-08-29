@@ -26,29 +26,32 @@ class OffLatticeParticle(object):
 class LatticeParticleSpace(object):
 
     def __init__(self, index, max_index, col_size, row_size, layer_size, voxel_radius,
-            lattice_species, offlattice_species, compVacant):
+            lattice_species, offlattice_species):
         self.__index = index
         self.__max_index = max_index
+        self.__time = 0
         self.__lattice_pool = {}
         self.__offlattice_pool = {}
-        #self.__pool = {}
         self.__row_size = row_size
         self.__layer_size = layer_size
         self.__voxel_radius = voxel_radius
-        self.__species = []
-        self.__species.extend(lattice_species)
-        self.__species.extend(offlattice_species)
+        #self.__species = []
+        #self.__species.extend(lattice_species)
+        #self.__species.extend(offlattice_species)
         self.__lattice_species = lattice_species
         self.__offlattice_species = offlattice_species
-
-        for sp in compVacant:
-            self.add_particle(sp)
 
     def getIndex(self):
         return self.__index
 
     def getNumberOfItems(self):
         return self.__max_index
+
+    def setTime(self, time):
+        self.__time = time
+
+    def getTime(self):
+        return self.__time
 
     @property
     def species(self):

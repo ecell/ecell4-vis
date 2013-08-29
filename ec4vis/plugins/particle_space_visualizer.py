@@ -182,6 +182,7 @@ class ParticleSpaceVisualizerNode(Vtk3dVisualizerNode):
 
         self.view_scale = 1e-6
         self.sid_color_map = None
+        self.time = 0
         self.index = 0
         self.max_index = 0
         self.__axes = None
@@ -196,6 +197,7 @@ class ParticleSpaceVisualizerNode(Vtk3dVisualizerNode):
         kwargs = {'index':self.index}
         ps = self.fetch_particle_space(**kwargs)
         self.max_index = self.parent.request_data(NumberOfItemsSpec)
+        self.time = ps.getTime()
         self.particles_visual.reset_actors(
             dict(particle_space = ps,
                  view_scale = self.view_scale,
@@ -216,6 +218,7 @@ class ParticleSpaceVisualizerNode(Vtk3dVisualizerNode):
         ps = self.parent.request_data(ParticleSpaceSpec, **kwargs)
         if ps is not None:
             self.update_list(**kwargs)
+            self.index = 0
         return ps
 
     @log_call
@@ -270,16 +273,20 @@ class ParticleSpaceVisualizerInspector(InspectorPage):
         self.index_widget = wx.Slider(self, style=wx.SL_HORIZONTAL | wx.SL_LABELS)
         self.index_widget.SetMin(0)
         self.index_widget.Bind(wx.EVT_SLIDER, self.index_updated)
+        self.time_widget = wx.TextCtrl(
+            self, wx.ID_ANY, "0", style=wx.TE_PROCESS_ENTER)
+        self.time_widget.Disable()
         widgets.extend([
             (wx.StaticText(self, -1, 'Scale :'), 0, wx.ALL | wx.EXPAND),
             (self.view_scale_entry, 1, wx.ALL | wx.EXPAND),
             (wx.StaticText(self, -1, 'Index :'), 0, wx.ALL | wx.EXPAND),
-            (self.index_widget, 1, wx.ALL | wx.EXPAND)])
+            (self.index_widget, 1, wx.ALL | wx.EXPAND),
+            (wx.StaticText(self, -1, 'Time :'), 0, wx.ALL | wx.EXPAND),
+            (self.time_widget, 1, wx.ALL | wx.EXPAND)])
 
         element_array = []
         self.listbox = wx.CheckListBox(
             self, wx.ID_ANY, choices=element_array,
-            # style=wx.LB_HSCROLL | wx.LB_NEEDED_SB | wx.LB_SORT)
             style=wx.LB_MULTIPLE | wx.LB_HSCROLL | wx.LB_NEEDED_SB | wx.LB_SORT)
         self.listbox.Bind(wx.EVT_CHECKLISTBOX, self.listbox_select)
         self.listbox.Bind(wx.EVT_LISTBOX_DCLICK, self.doubleclick)
@@ -288,7 +295,7 @@ class ParticleSpaceVisualizerInspector(InspectorPage):
         widgets.extend([
             (wx.StaticText(self, -1, 'Species'), 0, wx.ALL | wx.EXPAND),
             # (self.refresh_button_pressed, 0, wx.ALL | wx.EXPAND),
-            (self.listbox, 1, wx.ALL | wx.EXPAND)])
+            (self.listbox, 0, wx.ALL | wx.EXPAND)])
 
         self.listbox.Bind(wx.EVT_RIGHT_DOWN, self.listbox_right_down)
 
@@ -432,6 +439,7 @@ class ParticleSpaceVisualizerInspector(InspectorPage):
                 self.listbox.Check(i, True)
                 c = tuple([int(x * 255) for x in self.target.sid_color_map[sid]])
                 self.listbox.SetItemForegroundColour(i, c)
+        self.time_widget.SetValue(str(self.target.time))
         self.index_widget.SetMax(self.target.max_index-1)
 
         """Called on any status_change() on PipelineNode.
