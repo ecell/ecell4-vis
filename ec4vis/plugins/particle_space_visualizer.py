@@ -133,7 +133,11 @@ class ParticlesVisual(ActorsVisual):
 
     def get_bounds(self):
         if self.particle_space is not None:
-            bounds = [numpy.inf, 0.0, numpy.inf, 0.0, numpy.inf, 0.0]
+            if self.particle_space.static_bounds is not None:
+                bounds = numpy.array(self.particle_space.static_bounds) / self.view_scale
+                return bounds
+            else:
+                bounds = [numpy.inf, 0.0, numpy.inf, 0.0, numpy.inf, 0.0]
             for sid in self.particle_space.species:
                 if sid not in self.color_map.keys():
                     continue

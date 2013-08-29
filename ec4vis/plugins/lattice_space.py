@@ -42,6 +42,8 @@ class LatticeParticleSpace(object):
         self.__lattice_species = lattice_species
         self.__offlattice_species = offlattice_species
 
+        self.static_bounds = None
+
     def getIndex(self):
         return self.__index
 
@@ -53,6 +55,10 @@ class LatticeParticleSpace(object):
 
     def getTime(self):
         return self.__time
+
+    @property
+    def voxel_radius(self):
+        return self.__voxel_radius
 
     @property
     def species(self):

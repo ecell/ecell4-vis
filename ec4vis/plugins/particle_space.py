@@ -17,6 +17,7 @@ class ParticleSpace(object):
 
     def __init__(self):
         self.__species_pool = {}
+        self.static_bounds = None
 
     @property
     def species(self):

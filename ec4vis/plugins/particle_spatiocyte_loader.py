@@ -250,6 +250,10 @@ class SpatiocyteLogReader:
                 ps.add_particle(OffLatticeParticle(sid, point))
 
         ps.setTime(data['theCurrentTime'])
+        col = self.header['aRealColSize'] * 2 * ps.voxel_radius
+        layer = self.header['aRealLayerSize'] * 2 * ps.voxel_radius
+        row = self.header['aRealRowSize'] * 2 * ps.voxel_radius
+        ps.static_bounds = [0.0, col, 0.0, layer, 0.0, row]
 
         return ps
 
