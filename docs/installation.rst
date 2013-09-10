@@ -20,6 +20,7 @@ dependencies (Ubuntu Linux)
    # apt-get install python-numpy
    # apt-get install python-h5py
    # apt-get install python-vtk
+   # apt-get install python-matplotlib
 
 dependencies (Mac OSX) 
 ============================
