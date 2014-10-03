@@ -44,4 +44,4 @@ Running ecell4-vis
 ::
 
    $ cd ecell4-vis
-   $ PYTHONPATH=/usr/local/lib/python2.7/site-packages python ec4vis/app.py
+   $ python ec4vis/app.py
